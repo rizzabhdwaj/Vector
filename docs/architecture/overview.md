@@ -1,19 +1,19 @@
 
-# Vektor Architecture
+# Vector Architecture
 
-Vektor is a distributed task queue and execution engine built using **Rust, Go, and TypeScript**. It distributes tasks across multiple workers, manages execution, and tracks task states.
+Vector is a distributed task queue and execution engine built using **Rust, Go, and TypeScript**. It distributes tasks across multiple workers, manages execution, and tracks task states.
 
-![Vektor Architecture](./vektor.png)
+![Vector Architecture](./vector.png)
 
 ## 1. Client / Dashboard (TypeScript)
 
-The interface through which users interact with Vektor.
+The interface through which users interact with Vector.
 
 - Submit tasks via `POST /tasks`.
 - Check task execution status.
 - Retrieve task results.
 
-## 2. Vektor Coordinator (Rust)
+## 2. Vector Coordinator (Rust)
 
 The central component responsible for managing tasks, scheduling execution, and coordinating workers.
 
@@ -77,4 +77,3 @@ Provides durable storage for task and worker information.
 | Scheduler → Go Worker | HTTP or gRPC |
 | Go Worker → Coordinator | HTTP or gRPC |
 | Coordinator → PostgreSQL | Database driver |
-
