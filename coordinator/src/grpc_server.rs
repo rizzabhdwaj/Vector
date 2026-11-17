@@ -8,8 +8,12 @@ use heartbeat::{
     HeartbeatRequest,
     heartbeat_server::{Heartbeat, HeartbeatServer},
 };
+use std::sync::{Arc, Mutex};
 
-struct HeartbeatService;
+use crate::worker::workers::Workforce;
+struct HeartbeatService {
+    workforce: Arc<Mutex<Workforce>>,
+}
 
 #[tonic::async_trait]
 impl Heartbeat for HeartbeatService {
@@ -17,14 +21,23 @@ impl Heartbeat for HeartbeatService {
         &self,
         request: Request<HeartbeatRequest>,
     ) -> Result<Response<()>, Status> {
-        println!("Heartbeat received: {:?}", request.into_inner());
+        let heartbeat = request.into_inner();
+        println!("Heartbeat received: {:?}", heartbeat);
+
+        self.workforce
+            .lock()
+            .map_err(|_| Status::internal("Workforce lock poisoned"))?
+            .new_worker(heartbeat);
+
         Ok(Response::new(()))
     }
 }
 
-pub async fn grpc_server() -> Result<(), tonic::transport::Error> {
+pub async fn grpc_server(workforce: Arc<Mutex<Workforce>>) -> Result<(), tonic::transport::Error> {
+    let service = HeartbeatService { workforce };
+
     Server::builder()
-        .add_service(HeartbeatServer::new(HeartbeatService))
+        .add_service(HeartbeatServer::new(service))
         .serve(([0, 0, 0, 0], 50052).into())
         .await
 }

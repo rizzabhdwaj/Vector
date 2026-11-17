@@ -1,11 +1,11 @@
 use crate::grpc_server::heartbeat::HeartbeatRequest;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 struct Worker {
     id: i32,
     available: bool,
 }
-#[derive(Default)]
+#[derive(Default, serde::Serialize)]
 pub struct Workforce {
     workers: Vec<Worker>,
 }
