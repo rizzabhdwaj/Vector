@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package task ;
+
+option go_package = "worker/proto;pb";
+/*
+
+  protoc --go_out=. --go_opt=paths=source_relative \
+  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+  proto/x.proto
+ 
+*/
+service task {
+  rpc FetchTask (TaskContent) returns (Result);
+}
+
+message TaskContent {
+  int32 id =1 ; 
+  string command =2;
+  repeated string args=3;
+}
+
+message Result {
+  bool success=1;
+	int32 id =2 ;
+	repeated string content =3;  
+}
+

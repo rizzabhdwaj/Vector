@@ -1,21 +1,23 @@
 // executes task and caputre results
 
 package internals;
-import ("log"
+import (
 	"os/exec") 
 
 type Response struct {
+	success bool ;
+	id  int32;
 	content []byte ;  
+
 }
 
-func execute_task(req_task Task) (*Response , error ) {
-	cmd := exec.Command(req_task.command, req_task.args);
+func execute_task(id int32, command string, args []string) *Response  {
+	cmd := exec.Command(command, args[0]);  // TODO - more arguments 
 	out, err := cmd.Output()
 
 	if err != nil {
-		log.Fatalf("Command failed: %v", err)
-		return nil , err ;
+		return &Response{content:[]byte(err.Error()), id: id, success: false};
 	}
-	return &Response{content:out},nil;
+	return &Response{content:out, id : id, success: true};
 	
 }

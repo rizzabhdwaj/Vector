@@ -11,14 +11,20 @@ import (
 
 // server implements pb.GreeterServer.
 type server struct {
-	pb.UnimplementedGreeterServer // Required for forward compatibility
+	pb.UnimplementedTaskServer // Required for forward compatibility
 }
 
-// SayHello implements the RPC method defined in greet.proto.
-func (s *server) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	return &pb.HelloReply{
-		Message: "Hello, " + req.GetName(),
+func (s *server) FetchTask(ctx context.Context, req *pb.TaskContent ) (*pb.Result, error) {
+	
+	//execute task 
+	response := execute_task(req.GetId(), req.GetCommand(), req.GetArgs());
+
+	return &pb.Result{
+		Content: []string{string(response.content)},
+		Id:      response.id,
+		Success: response.success,
 	}, nil
+
 }
 
 func ProtoServer() {
@@ -30,7 +36,7 @@ func ProtoServer() {
 
 	grpcServer := grpc.NewServer()
 
-	pb.RegisterGreeterServer(grpcServer, &server{})
+	pb.RegisterTaskServer(grpcServer, &server{})
 
 	reflection.Register(grpcServer)
 
