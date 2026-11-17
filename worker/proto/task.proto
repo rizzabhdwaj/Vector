@@ -7,7 +7,7 @@ option go_package = "worker/proto;pb";
 
   protoc --go_out=. --go_opt=paths=source_relative \
   --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-  proto/x.proto
+  proto/heartbeat.proto
  
 */
 service task {
@@ -25,4 +25,5 @@ message Result {
 	int32 id =2 ;
 	repeated string content =3;  
 }
+
 

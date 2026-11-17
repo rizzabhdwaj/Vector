@@ -1,11 +1,20 @@
 //Initialize dependencies, start HTTP server, handle shutdown
 
-package main;
+package main
 
 import (
+	"time"
 	"worker/internals"
 )
 
-func main(){
-	internals.ProtoServer();
+func periodicHeartbeat() {
+	for {
+		time.Sleep(5)
+		internals.Heartbeat();
+	}
+}
+
+func main() {
+	internals.ProtoServer()
+	go periodicHeartbeat();
 }

@@ -28,7 +28,7 @@ const (
 //
 // protoc --go_out=. --go_opt=paths=source_relative \
 // --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-// proto/x.proto
+// proto/heartbeat.proto
 type TaskClient interface {
 	FetchTask(ctx context.Context, in *TaskContent, opts ...grpc.CallOption) (*Result, error)
 }
@@ -57,7 +57,7 @@ func (c *taskClient) FetchTask(ctx context.Context, in *TaskContent, opts ...grp
 //
 // protoc --go_out=. --go_opt=paths=source_relative \
 // --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-// proto/x.proto
+// proto/heartbeat.proto
 type TaskServer interface {
 	FetchTask(context.Context, *TaskContent) (*Result, error)
 	mustEmbedUnimplementedTaskServer()
