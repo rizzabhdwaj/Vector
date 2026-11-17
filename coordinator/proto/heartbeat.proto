@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package heartbeat;
+
+import "google/protobuf/empty.proto";
+option go_package = "worker/proto;pb";
+/*
+
+  protoc --go_out=. --go_opt=paths=source_relative \
+  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+  proto/task.proto
+ 
+*/
+service heartbeat{
+  rpc SendHeartbeat (HeartbeatRequest) returns (google.protobuf.Empty);
+}
+
+message HeartbeatRequest {
+  int32 workerId = 1;
+  bool available = 2;
+}
