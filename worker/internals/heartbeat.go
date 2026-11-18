@@ -4,6 +4,7 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"strconv"
 
 	pb "worker/proto"
 
@@ -21,6 +22,13 @@ func Heartbeat() {
 	}
 
 	grpc_addr := os.Getenv("COORDINATOR_GRPC")
+	workerID := int64(1)
+	if value := os.Getenv("WORKER_ID"); value != "" {
+		workerID, err = strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			log.Fatalf("Invalid WORKER_ID: %v", err)
+		}
+	}
 
 	conn, err := grpc.NewClient(
 		grpc_addr,
@@ -37,8 +45,8 @@ func Heartbeat() {
 	defer cancel()
 
 	client.SendHeartbeat(ctx, &pb.HeartbeatRequest{
-		WorkerId:      1,
-		Available : true,
+		WorkerId:  int32(workerID),
+		Available: true,
 	})
 
 }

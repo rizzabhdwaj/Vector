@@ -1,12 +1,14 @@
 // Recieve's HTTP requests , decodes JSON , returns reponse
-package internals;
+package internals
+
 import (
 	"context"
-	"log"
-	"net"
-	"worker/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"log"
+	"net"
+	"os"
+	"worker/proto"
 )
 
 // server implements pb.GreeterServer.
@@ -14,10 +16,10 @@ type server struct {
 	pb.UnimplementedTaskServer // Required for forward compatibility
 }
 
-func (s *server) FetchTask(ctx context.Context, req *pb.TaskContent ) (*pb.Result, error) {
-	
-	//execute task 
-	response := execute_task(req.GetId(), req.GetCommand(), req.GetArgs());
+func (s *server) FetchTask(ctx context.Context, req *pb.TaskContent) (*pb.Result, error) {
+
+	//execute task
+	response := execute_task(req.GetId(), req.GetCommand(), req.GetArgs())
 
 	return &pb.Result{
 		Content: []string{string(response.content)},
@@ -28,8 +30,11 @@ func (s *server) FetchTask(ctx context.Context, req *pb.TaskContent ) (*pb.Resul
 }
 
 func ProtoServer() {
-	// 1. Open a TCP listener on port 50051
-	lis, err := net.Listen("tcp", ":50051")
+	addr := os.Getenv("WORKER_GRPC")
+	if addr == "" {
+		addr = ":50051"
+	}
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
@@ -40,10 +45,9 @@ func ProtoServer() {
 
 	reflection.Register(grpcServer)
 
-	log.Println("gRPC server listening on :50051")
+	log.Printf("gRPC server listening on %s", addr)
 
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
 }
-
