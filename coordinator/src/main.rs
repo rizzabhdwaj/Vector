@@ -1,5 +1,6 @@
 mod api_server;
 mod grpc_server;
+mod task_queue;
 mod worker;
 use std::sync::{Arc, Mutex};
 #[actix_web::main]

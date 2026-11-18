@@ -2,8 +2,8 @@ use actix_cors::Cors;
 use actix_web::{App, HttpResponse, HttpServer, get, web};
 use std::sync::{Arc, Mutex};
 
+use crate::task_queue::queue::TaskQueue;
 use crate::worker::workers::Workforce;
-
 const PORT: u16 = 3030;
 
 #[get("/metrics")]
@@ -21,9 +21,12 @@ async fn get_workforce(workforce: web::Data<Mutex<Workforce>>) -> HttpResponse {
 
 pub async fn api_gateway(workforce: Arc<Mutex<Workforce>>) -> std::io::Result<()> {
     let workforce = web::Data::from(workforce);
+    let task_q = web::Data::new(Mutex::new(TaskQueue::create_queue()));
+
     let server = HttpServer::new(move || {
         App::new()
             .app_data(workforce.clone())
+            .app_data(task_q.clone())
             .wrap(Cors::permissive())
             .service(health)
             .service(get_workforce)
