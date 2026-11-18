@@ -1,8 +1,8 @@
 use actix_cors::Cors;
-use actix_web::{App, HttpResponse, HttpServer, get, web};
+use actix_web::{App, HttpResponse, HttpServer, get, post, web};
 use std::sync::{Arc, Mutex};
 
-use crate::task_queue::queue::TaskQueue;
+use crate::task_queue::queue::{TaskQueue, task};
 use crate::worker::workers::Workforce;
 const PORT: u16 = 3030;
 
@@ -19,6 +19,25 @@ async fn get_workforce(workforce: web::Data<Mutex<Workforce>>) -> HttpResponse {
     }
 }
 
+#[get("/tasks")]
+async fn get_tasks(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
+    match queue.lock() {
+        Ok(queue) => HttpResponse::Ok().json(&*queue),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[post("/tasks")]
+async fn create_task(queue: web::Data<Mutex<TaskQueue>>, body: web::Json<task>) -> HttpResponse {
+    match queue.lock() {
+        Ok(mut queue) => {
+            queue.new_task(body.into_inner());
+            HttpResponse::Created().finish()
+        }
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
 pub async fn api_gateway(workforce: Arc<Mutex<Workforce>>) -> std::io::Result<()> {
     let workforce = web::Data::from(workforce);
     let task_q = web::Data::new(Mutex::new(TaskQueue::create_queue()));
@@ -30,6 +49,8 @@ pub async fn api_gateway(workforce: Arc<Mutex<Workforce>>) -> std::io::Result<()
             .wrap(Cors::permissive())
             .service(health)
             .service(get_workforce)
+            .service(create_task)
+            .service(get_tasks)
     })
     .bind(("0.0.0.0", PORT))?;
 
