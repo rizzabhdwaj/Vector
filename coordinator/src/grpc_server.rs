@@ -27,7 +27,7 @@ impl Heartbeat for HeartbeatService {
         self.workforce
             .lock()
             .map_err(|_| Status::internal("Workforce lock poisoned"))?
-            .new_worker(heartbeat);
+            .update_worker(heartbeat);
 
         Ok(Response::new(()))
     }
