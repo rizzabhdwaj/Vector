@@ -5,7 +5,6 @@ use std::sync::{Arc, Mutex};
 use crate::task_queue::queue::{Task, TaskQueue};
 use crate::worker::workers::Workforce;
 const PORT: u16 = 3030;
-
 #[get("/metrics")]
 async fn health() -> HttpResponse {
     HttpResponse::Ok().json("fine ! ")

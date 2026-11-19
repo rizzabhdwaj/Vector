@@ -1,5 +1,4 @@
 use crate::grpc_server::heartbeat::HeartbeatRequest;
-use std::time::Duration;
 
 #[derive(Clone, Debug, serde::Serialize)]
 struct Worker {
