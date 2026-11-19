@@ -13,7 +13,7 @@ type Response struct {
 }
 
 func execute_task(id int32, command string, args []string) *Response  {
-	cmd := exec.Command(command, args[0]);  // TODO - more arguments 
+	cmd := exec.Command(command, args...);
 	out, err := cmd.Output()
 
 	if err != nil {
