@@ -36,6 +36,7 @@ impl Scheduler {
                     let Some(task) = tasks.content.pop_front() else {
                         break;
                     };
+                    println!("assigned task {0} to worker {1}", task.id, worker.id);
                     worker.available = false;
                     assignments.push((worker.id, task));
                 }
