@@ -8,7 +8,7 @@ enum Status {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct task {
+pub struct Task {
     id: u32,
     command: String,
     args: Vec<String>,
@@ -16,14 +16,14 @@ pub struct task {
 }
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct TaskQueue {
-    content: VecDeque<task>,
+    content: VecDeque<Task>,
 }
 
 impl TaskQueue {
     pub fn create_queue() -> TaskQueue {
         TaskQueue::default()
     }
-    pub fn new_task(&mut self, tsk: task) {
+    pub fn new_task(&mut self, tsk: Task) {
         self.content.push_back(tsk);
     }
 }
