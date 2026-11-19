@@ -26,51 +26,62 @@ impl Scheduler {
     }
 
     async fn schedule_available(&self) {
-        let mut assignments = Vec::new();
-        {
-            let mut workers = self.workers.lock().unwrap();
-            let mut tasks = self.tasks.lock().unwrap();
+        let mut workers = self.workers.lock().unwrap();
+        let mut tasks = self.tasks.lock().unwrap();
 
-            for worker in &mut workers.workers {
-                if worker.available {
-                    let Some(task) = tasks.content.pop_front() else {
-                        break;
-                    };
-                    println!("assigned task {0} to worker {1}", task.id, worker.id);
-                    worker.available = false;
-                    assignments.push((worker.id, task));
-                }
+        for worker in &mut workers.workers {
+            if !worker.available {
+                continue;
             }
-        }
+            let Some(task) = tasks.content.pop_front() else {
+                break;
+            };
+            worker.available = false;
+            let worker_id = worker.id;
+            let tasks = Arc::clone(&self.tasks);
+            let workers = Arc::clone(&self.workers);
 
-        // Release shared-state locks before making network requests.
-        for (worker_id, task) in assignments {
-            let mut client =
-                task_rpc::task_client::TaskClient::connect(format!("http://localhost:{worker_id}"))
+            tokio::spawn(async move {
+                let result = async {
+                    let id = i32::try_from(task.id).map_err(|err| err.to_string())?;
+                    let mut client = task_rpc::task_client::TaskClient::connect(format!(
+                        "http://localhost:{worker_id}"
+                    ))
                     .await
-                    .unwrap();
-
-            let result = client
-                .fetch_task(task_rpc::TaskContent {
-                    id: task.id.try_into().unwrap(),
-                    command: task.command,
-                    args: task.args,
-                })
-                .await
-                .unwrap();
-            let result = result.into_inner();
-            self.tasks.lock().unwrap().outputs.push(Output {
-                output: result.content.join("\n"),
-                task_id: task.id,
-            });
-
-            let mut workers = self.workers.lock().unwrap();
-            for worker in &mut workers.workers {
-                if worker.id == worker_id {
-                    worker.available = true;
-                    break;
+                    .map_err(|err| err.to_string())?;
+                    client
+                        .fetch_task(task_rpc::TaskContent {
+                            id,
+                            command: task.command,
+                            args: task.args,
+                        })
+                        .await
+                        .map(|response| response.into_inner())
+                        .map_err(|err| err.to_string())
                 }
-            }
+                .await;
+
+                let output = match result {
+                    Ok(result) => result.content.join("\n"),
+                    Err(error) => {
+                        // An RPC failure does not prove execution stopped. Keep the worker reserved.
+                        tasks.lock().unwrap().outputs.push(Output {
+                            output: format!("Dispatch failed for worker {worker_id}: {error}"),
+                            task_id: task.id,
+                        });
+                        return;
+                    }
+                };
+                tasks.lock().unwrap().outputs.push(Output {
+                    output,
+                    task_id: task.id,
+                });
+                // The worker responds only after execution; the scheduler never waits here.
+                let mut workers = workers.lock().unwrap();
+                if let Some(worker) = workers.workers.iter_mut().find(|w| w.id == worker_id) {
+                    worker.available = true;
+                }
+            });
         }
     }
 }
