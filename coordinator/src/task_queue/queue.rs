@@ -9,14 +9,22 @@ enum Status {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Task {
-    id: u32,
-    command: String,
-    args: Vec<String>,
+    pub(crate) id: u32,
+    pub(crate) command: String,
+    pub(crate) args: Vec<String>,
     status: Status,
 }
+#[derive(Debug, Serialize)]
+pub struct Output {
+    pub(crate) output: String,
+    pub(crate) task_id: u32,
+}
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct TaskQueue {
-    content: VecDeque<Task>,
+    pub(crate) content: VecDeque<Task>,
+    #[serde(skip)]
+    pub(crate) outputs: Vec<Output>,
 }
 
 impl TaskQueue {

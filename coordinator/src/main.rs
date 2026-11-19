@@ -13,12 +13,10 @@ async fn main() -> std::io::Result<()> {
     let work_force = Arc::new(Mutex::new(Workforce::init_workforce()));
     let task_q = Arc::new(Mutex::new(TaskQueue::create_queue()));
 
-    let _scheduler = Arc::new(Mutex::new(Scheduler::init_scheduler(
-        Arc::clone(&task_q),
-        Arc::clone(&work_force),
-    )));
+    let scheduler = Scheduler::init_scheduler(Arc::clone(&task_q), Arc::clone(&work_force));
 
     tokio::select! {
+        _ = scheduler.run() => Ok(()),
         result = api_server::api_gateway(Arc::clone(&work_force), Arc::clone(&task_q)) => result,
         result = grpc_server::grpc_server(Arc::clone(&work_force)) => {
             result.map_err(std::io::Error::other)

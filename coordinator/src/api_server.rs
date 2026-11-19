@@ -26,6 +26,14 @@ async fn get_tasks(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
     }
 }
 
+#[get("/outputs")]
+async fn get_outputs(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
+    match queue.lock() {
+        Ok(queue) => HttpResponse::Ok().json(&queue.outputs),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
 #[post("/tasks")]
 async fn create_task(queue: web::Data<Mutex<TaskQueue>>, body: web::Json<Task>) -> HttpResponse {
     match queue.lock() {
@@ -53,6 +61,7 @@ pub async fn api_gateway(
             .service(get_workforce)
             .service(create_task)
             .service(get_tasks)
+            .service(get_outputs)
     })
     .bind(("0.0.0.0", PORT))?;
 
