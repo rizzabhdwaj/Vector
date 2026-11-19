@@ -3,13 +3,13 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"time"
 	"worker/internals"
 )
 
 func periodicHeartbeat() {
-	fmt.Println("Heartbeat thread launched");
+	// fmt.Println("Heartbeat thread launched");
 	for {
 		time.Sleep(5 * time.Second)
 		internals.Heartbeat();

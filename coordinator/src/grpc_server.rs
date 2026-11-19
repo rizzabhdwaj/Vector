@@ -22,7 +22,7 @@ impl Heartbeat for HeartbeatService {
         request: Request<HeartbeatRequest>,
     ) -> Result<Response<()>, Status> {
         let heartbeat = request.into_inner();
-        println!("Heartbeat received: {:?}", heartbeat);
+        // println!("Heartbeat received: {:?}", heartbeat);
 
         self.workforce
             .lock()

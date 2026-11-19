@@ -3,6 +3,7 @@ package internals
 
 import (
 	"context"
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"log"
@@ -10,7 +11,6 @@ import (
 	"os"
 	"worker/proto"
 )
-
 // server implements pb.GreeterServer.
 type server struct {
 	pb.UnimplementedTaskServer // Required for forward compatibility
@@ -20,7 +20,16 @@ func (s *server) FetchTask(ctx context.Context, req *pb.TaskContent) (*pb.Result
 
 	//execute task
 	response := execute_task(req.GetId(), req.GetCommand(), req.GetArgs())
-
+	workerID := os.Getenv("WORKER_GRPC")
+	
+	status := "failed"
+	
+	if response.success {
+		status = "compleated"
+	}
+	
+	fmt.Printf("worker : %s %s %d\n", workerID, status, response.id)
+	
 	return &pb.Result{
 		Content: []string{string(response.content)},
 		Id:      response.id,

@@ -3,7 +3,8 @@
 package internals;
 
 import (
-	"os/exec") 
+	"os/exec"
+) 
 
 type Response struct {
 	success bool ;
