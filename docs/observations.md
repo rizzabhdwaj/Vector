@@ -2,8 +2,6 @@
 
 <img align="right" width="200" height="200" src="./ithink.jpg" alt="Vector Architecture" />
 
-## Finished the basic working of all 3 components (Frotnend , Workers , Scheduler)
-
 ### i belive the scheduler is not working correctly cuz when i send the 2nd request after the 1st one on /task i dont see the 2nd worker busy immediately i wonder whats wrong
 
 #### lets print what worker is doing what task
