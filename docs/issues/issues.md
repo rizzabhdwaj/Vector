@@ -1,18 +1,15 @@
-# Issues - (found after prototype)
-
-
 ## Solved 
 
 ## Unsolved
 
-[IMPORTANT]
-- A failed dispatch leaks the worker. The task is already popped from the queue, and on an RPC error the worker stays ``available = false`` forever. The task is lost and the slot is gone.
-    - Add last_seen to workers, and have a reaper mark workers dead after about 3 missed heartbeats.
-    - Add a proper task state machine (Queued → Running → Succeeded/Failed) with server-generated UUIDs.
-    - Requeue tasks from dead workers, add timeouts on both sides, and set a max-retries limit.
-    - Write a chaos script that kills random workers while tasks run and checks that every task still completes.
+#### IMPORTANT
+- [ ] A failed dispatch leaks the worker. The task is already popped from the queue, and on an RPC error the worker stays ``available = false`` forever. The task is lost and the slot is gone.
+    - [*] Add last_seen to workers, and have a reaper mark workers dead after about 3 missed heartbeats.
+    - [ ] Add a proper task state machine (Queued → Running → Succeeded/Failed) with server-generated UUIDs.
+    - [ ] Requeue tasks from dead workers, add timeouts on both sides, and set a max-retries limit.
+    - [ ] Write a chaos script that kills random workers while tasks run and checks that every task still completes.
 
-[Yeah aight (Also Important)]
+#### Yeah aight (Also Important)
 - Heartbeats don’t do anything. ``update_worker`` returns early for known workers, so there’s no ``last_seen`` and no dead-worker detection. A killed worker stays in the registry and keeps receiving tasks.
 - Worker address is localhost:{worker_id}. The ID doubles as the port, which blocks running workers on other machines. Workers should register with an address.
 - No timeouts anywhere. exec.Command has no context and the gRPC call has no deadline, so one hung task reserves a worker forever.

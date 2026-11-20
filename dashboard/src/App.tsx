@@ -1,7 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
-type Worker = { id: number; available: boolean }
+type WorkerStatus = 'free' | 'busy' | 'dead'
+type Worker = { id: number; curr_status: WorkerStatus }
 type TaskOutput = { task_id: number; output: string }
+
+const workerStatus: Record<WorkerStatus, { label: string; dot: string }> = {
+  free: { label: 'Available', dot: 'bg-emerald-600' },
+  busy: { label: 'Busy', dot: 'bg-yellow-400' },
+  dead: { label: 'Dead', dot: 'bg-black' },
+}
 
 const apiUrl = (import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:3030`).replace(/\/$/, '')
 const inputClass = 'w-full rounded border border-zinc-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 disabled:opacity-60'
@@ -134,21 +141,24 @@ function App() {
               <thead className="border-b border-zinc-200 bg-zinc-50 text-zinc-500">
                 <tr>
                   <th scope="col" className="px-4 py-3 font-medium">Worker ID</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Availability</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {workers?.map((worker) => (
-                  <tr key={worker.id}>
-                    <td className="px-4 py-3 font-mono">{worker.id}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-2">
-                        <span aria-hidden="true" className={`size-1.5 rounded-full ${worker.available ? 'bg-emerald-600' : 'bg-zinc-400'}`} />
-                        {worker.available ? 'Available' : 'Unavailable'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {workers?.map((worker) => {
+                  const status = workerStatus[worker.curr_status] ?? { label: 'Unknown', dot: 'bg-zinc-400' }
+                  return (
+                    <tr key={worker.id}>
+                      <td className="px-4 py-3 font-mono">{worker.id}</td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-2">
+                          <span aria-hidden="true" className={`size-1.5 rounded-full ${status.dot}`} />
+                          {status.label}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
                 {(!workers || workers.length === 0) && (
                   <tr><td colSpan={2} className="px-4 py-8 text-center text-zinc-500">
                     {workers ? 'No workers registered yet.' : workerError ? 'Worker list unavailable.' : 'Loading workers...'}

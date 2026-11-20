@@ -34,3 +34,15 @@ ok soo .. rust is not assigning the task to the free worker instead waiting for 
 
 Im scared of crashing my Software , even delibarately ..... i should work on that .
 
+
+### workers are diying like flies cuz heartbeat taking a lot of time apprantly 
+## removed the reading grpc and worker id from env and os each time but that didnt helped 
+```
+worker 5001 heartbeat gap: 15.041985281s
+worker 5002 heartbeat gap: 15.04231619s
+```
+   - i was loading the env and args variables in the loop and also the connection 
+   - crazy it takes 15 sec to do all that
+   - working fine now 
+
+

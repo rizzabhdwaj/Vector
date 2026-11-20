@@ -1,10 +1,16 @@
 use crate::task_queue::queue::{Output, TaskQueue};
-use crate::worker::workers::Workforce;
-use std::sync::{Arc, Mutex};
+use crate::worker::workers::{WorkerStatus, Workforce};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 
 mod task_rpc {
     tonic::include_proto!("task");
+}
+
+// A poisoned lock means some thread panicked while holding it. The scheduler loop must
+// survive that, so recover the guard instead of unwrapping (which would panic the loop).
+fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 pub struct Scheduler {
@@ -26,17 +32,17 @@ impl Scheduler {
     }
 
     async fn schedule_available(&self) {
-        let mut workers = self.workers.lock().unwrap();
-        let mut tasks = self.tasks.lock().unwrap();
+        let mut workers = lock(&self.workers);
+        let mut tasks = lock(&self.tasks);
 
         for worker in &mut workers.workers {
-            if !worker.available {
+            if worker.curr_status != WorkerStatus::Free {
                 continue;
             }
             let Some(task) = tasks.content.pop_front() else {
                 break;
             };
-            worker.available = false;
+            worker.curr_status = WorkerStatus::Busy;
             let worker_id = worker.id;
             let tasks = Arc::clone(&self.tasks);
             let workers = Arc::clone(&self.workers);
@@ -65,21 +71,21 @@ impl Scheduler {
                     Ok(result) => result.content.join("\n"),
                     Err(error) => {
                         // An RPC failure does not prove execution stopped. Keep the worker reserved.
-                        tasks.lock().unwrap().outputs.push(Output {
+                        lock(&tasks).outputs.push(Output {
                             output: format!("Dispatch failed for worker {worker_id}: {error}"),
                             task_id: task.id,
                         });
                         return;
                     }
                 };
-                tasks.lock().unwrap().outputs.push(Output {
+                lock(&tasks).outputs.push(Output {
                     output,
                     task_id: task.id,
                 });
                 // The worker responds only after execution; the scheduler never waits here.
-                let mut workers = workers.lock().unwrap();
+                let mut workers = lock(&workers);
                 if let Some(worker) = workers.workers.iter_mut().find(|w| w.id == worker_id) {
-                    worker.available = true;
+                    worker.curr_status = WorkerStatus::Free;
                 }
             });
         }
