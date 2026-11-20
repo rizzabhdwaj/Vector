@@ -1,6 +1,6 @@
 # Observing and Figuring out what im building
 
-<img align="right" width="320" src="./ithink.jpg" alt="Vector Architecture" />
+<img align="right" width="200" height="200" src="./ithink.jpg" alt="Vector Architecture" />
 
 ## Finished the basic working of all 3 components (Frotnend , Workers , Scheduler)
 
