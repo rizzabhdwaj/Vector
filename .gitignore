@@ -1,4 +1,2 @@
 /coordinator/target
 /worker/.env
-# The frontend lives on the `dashboard` branch; main is backend-only.
-/dashboard
