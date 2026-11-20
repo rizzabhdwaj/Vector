@@ -32,4 +32,5 @@ ok soo .. rust is not assigning the task to the free worker instead waiting for 
 ### how i found it ? 
 ## professional debugging - [ println!() println!() println!() println!() ]
 
+Im scared of crashing my Software , even delibarately ..... i should work on that .
 
