@@ -42,4 +42,5 @@ impl TaskQueue {
     pub fn new_task(&mut self, tsk: Task) {
         self.content.push_back(tsk);
     }
+    async fn update_db(tsk: Task) {}
 }
