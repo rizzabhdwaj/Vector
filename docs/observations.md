@@ -1,6 +1,6 @@
 # Observing and Figuring out what im building
 
-<img align="right" width="200" height="200" src="./ithink.jpg" alt="Vector Architecture" />
+<img align="right" width="200" height="300" src="./ithink.jpg" alt="Vector Architecture" />
 
 ### i belive the scheduler is not working correctly cuz when i send the 2nd request after the 1st one on /task i dont see the 2nd worker busy immediately i wonder whats wrong
 
