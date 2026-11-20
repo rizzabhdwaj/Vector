@@ -27,6 +27,9 @@ assigned task 1764651568 to worker 5003 -- t = 10
 ok soo .. rust is not assigning the task to the free worker instead waiting for the latest one to be free 
 
 ### Solution 
-## this dumb ahh scheduler was waiting for the worker to compleate the work before ending the funciton with worker.available = true again (yeah ai aint taking my job)
+## this dumb ahh scheduler was waiting for the worker to compleate the work before ending the funciton with worker.available = true again (yeah AI aint taking my job)
+
+### how i found it ? 
+## professional debugging - [ println!() println!() println!() println!() ]
 
 
