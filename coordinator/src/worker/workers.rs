@@ -1,4 +1,4 @@
-use crate::grpc_server::heartbeat::HeartbeatRequest;
+use crate::api::grpc_server::heartbeat::HeartbeatRequest;
 use std::time::{Duration, Instant};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
