@@ -3,10 +3,10 @@ use sqlx::PgPool;
 use std::collections::VecDeque;
 
 #[derive(Debug, Deserialize, Serialize)]
-enum Status {
-    Compleated,
+pub enum Status {
     Assigned,
-    Failed,
+    Queued,
+    Failed, // will be requeued or assigned to a different worker ig
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -24,23 +24,41 @@ pub struct Output {
 
 #[derive(Debug, Serialize)]
 pub struct TaskQueue {
-    pub(crate) content: VecDeque<Task>,
-    #[serde(skip)]
-    pub(crate) outputs: Vec<Output>,
-    #[serde(skip)]
-    pub(crate) pool: PgPool,
+    content: VecDeque<Task>,
+    outputs: Vec<Output>,
 }
 
+// Some kinda event broadcast is required here
 impl TaskQueue {
-    pub fn create_queue(pool: PgPool) -> TaskQueue {
+    pub fn create_queue() -> TaskQueue {
         TaskQueue {
             content: VecDeque::new(),
             outputs: Vec::new(),
-            pool,
         }
     }
-    pub fn new_task(&mut self, tsk: Task) {
+
+    /// Insert a new task into the queue.
+    pub fn new_task(&mut self, mut tsk: Task) {
+        tsk.status = Status::Queued;
         self.content.push_back(tsk);
     }
-    async fn update_db(tsk: Task) {}
+
+    /// Push a task output (e.g. after execution completes).
+    pub fn push_output(&mut self, out: Output) {
+        self.outputs.push(out);
+    }
+
+    /// Remove and return the next task, or `None` if the queue is empty.
+    pub fn pop_task(&mut self) -> Option<Task> {
+        if let Some(task) = self.content.front_mut() {
+            task.status = Status::Assigned;
+        }
+        self.content.pop_front()
+    }
+
+    /// Consume and return all stored outputs, clearing the internal list.
+    pub fn take_outputs(&mut self) -> Vec<Output> {
+        std::mem::take(&mut self.outputs)
+    }
 }
+

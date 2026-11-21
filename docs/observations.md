@@ -52,3 +52,5 @@ worker 5002 heartbeat gap: 15.04231619s
 ## So its time to persist the tasks into a database
 
 ### we already have 2 threads working (the Reaper and Scheduler on rust ) and i think i can have another working for DB Worker but ill just be adding just normal write through each step , and the parellel healper can just be a optimisation later on
+
+### nvm adding a DB_Worker only much simpler

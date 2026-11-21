@@ -29,7 +29,7 @@ async fn get_tasks(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
 #[get("/outputs")]
 async fn get_outputs(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
     match queue.lock() {
-        Ok(queue) => HttpResponse::Ok().json(&queue.outputs),
+        Ok(mut queue) => HttpResponse::Ok().json((&mut *queue).take_outputs()),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }

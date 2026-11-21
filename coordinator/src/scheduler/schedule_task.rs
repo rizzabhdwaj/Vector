@@ -1,5 +1,6 @@
-use crate::task_queue::queue::{Output, TaskQueue};
+use crate::task_queue::queue::{Output, Status, TaskQueue};
 use crate::worker::workers::{WorkerStatus, Workforce};
+use sqlx::PgPool;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 
@@ -39,7 +40,7 @@ impl Scheduler {
             if worker.curr_status != WorkerStatus::Free {
                 continue;
             }
-            let Some(task) = tasks.content.pop_front() else {
+            let Some(task) = tasks.pop_task() else {
                 break;
             };
             worker.curr_status = WorkerStatus::Busy;
@@ -71,14 +72,14 @@ impl Scheduler {
                     Ok(result) => result.content.join("\n"),
                     Err(error) => {
                         // An RPC failure does not prove execution stopped. Keep the worker reserved.
-                        lock(&tasks).outputs.push(Output {
+                        lock(&tasks).push_output(Output {
                             output: format!("Dispatch failed for worker {worker_id}: {error}"),
                             task_id: task.id,
                         });
                         return;
                     }
                 };
-                lock(&tasks).outputs.push(Output {
+                lock(&tasks).push_output(Output {
                     output,
                     task_id: task.id,
                 });

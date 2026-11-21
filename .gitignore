@@ -1,2 +1,3 @@
 /coordinator/target
 /worker/.env
+/coordinator/.env

@@ -13,12 +13,13 @@ use std::sync::{Arc, Mutex};
 async fn main() -> std::io::Result<()> {
     //both Scheduler and Api gateway will have a shared access to these 2 variable's through ArcMutex
 
+    dotenvy::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").expect("database url not found");
     let pool = db::init_pool(&database_url)
         .await
         .expect("db connection failed");
     let work_force = Arc::new(Mutex::new(Workforce::init_workforce()));
-    let task_q = Arc::new(Mutex::new(TaskQueue::create_queue(pool)));
+    let task_q = Arc::new(Mutex::new(TaskQueue::create_queue()));
 
     let scheduler = Scheduler::init_scheduler(Arc::clone(&task_q), Arc::clone(&work_force));
     let reaper = reaper::Reaper::new(Arc::clone(&work_force), Duration::from_secs(15));
