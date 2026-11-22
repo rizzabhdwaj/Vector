@@ -1,9 +1,8 @@
 # Prometheus for Vector
 
-This integration lives on `prometheus_metric`. `main` has no metrics servers or
-Prometheus dependencies. Switch branches with a clean working tree and restart
-the coordinator and workers after switching: existing processes keep running
-their old binaries.
+This integration is available on `main` and `prometheus_metric`. Restart the
+coordinator and workers after rebuilding: existing processes keep running their
+old binaries.
 
 Prometheus periodically GETs each process's metrics endpoint ("scraping") and
 stores the samples in its own time-series database, separate from Vector's
@@ -14,7 +13,7 @@ Postgres database. No task payloads or outputs are exported.
 From the repository root:
 
 ```sh
-git switch prometheus_metric
+git switch main
 # Terminal 1: uses the existing coordinator/.env and Postgres setup
 cd coordinator
 cargo run

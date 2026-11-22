@@ -1,45 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: ./worker/kill_worker.sh <worker_id>
-# Kills the Go worker process that has gRPC endpoint localhost:<worker_id>.
-
-if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 <worker_id>"
+if [[ $# -ne 1 || ! $1 =~ ^[0-9]{1,5}$ ]]; then
+  echo "Usage: $0 <worker-grpc-port> (example: $0 5003)" >&2
   exit 1
 fi
 
-WORKER_ID=$1
-# Expected gRPC address for this worker
-GRPC_ADDR="localhost:${WORKER_ID}"
-
-# Search all PIDs for one whose environment contains the matching gRPC address.
-# We look through /proc/[0-9]*/environ for a match.
-FOUND_PID=""
-
-for pid_dir in /proc/[0-9]*/; do
-  pid=$(basename "$pid_dir")
-  # Quick check: ensure it's a running process
-  if [[ ! -r "$pid_dir/cmdline" ]]; then
-    continue
-  fi
-  # Read the environment; note that /proc/PID/environ may have NUL separated entries.
-  env=$(tr '\0' '\n' < "$pid_dir/environ" 2>/dev/null | grep -i "WORKER_GRPC=" || true)
-  if [[ -n "$env" ]]; then
-    # Extract the value after =
-    grpc_val=$(echo "$env" | cut -d= -f2-)
-    if [[ "$grpc_val" == "$GRPC_ADDR" ]]; then
-      FOUND_PID=$pid
-      break
-    fi
-  fi
-done
-
-if [[ -z "$FOUND_PID" ]]; then
-  echo "No worker process found with gRPC address $GRPC_ADDR"
+port=$((10#$1))
+if ((port < 1 || port > 65535)); then
+  echo "Port must be between 1 and 65535." >&2
   exit 1
 fi
 
-echo "Found worker process PID=$FOUND_PID with gRPC address $GRPC_ADDR"
-kill -9 "$FOUND_PID" 2>/dev/null && echo "Worker $WORKER_ID (PID $FOUND_PID) killed." || echo "Failed to kill PID $FOUND_PID"
-echo "The coordinator reaper will mark the worker as dead after 15s (timeout)."
+command -v ss >/dev/null || { echo "ss is required (iproute2)." >&2; exit 1; }
+mapfile -t pids < <(ss -H -ltnp "sport = :$port" |
+  grep -oE 'pid=[0-9]+' | cut -d= -f2 | sort -u)
+
+if [[ ${#pids[@]} -ne 1 ]]; then
+  echo "Expected one visible process listening on gRPC port $port; found ${#pids[@]}." >&2
+  exit 1
+fi
+
+pid=${pids[0]}
+exe=$(readlink "/proc/$pid/exe") || exit 1
+if [[ ${exe##*/} != worker && ${exe##*/} != "worker (deleted)" ]]; then
+  echo "Port $port belongs to $exe (PID $pid), not the worker binary." >&2
+  exit 1
+fi
+
+kill -TERM "$pid"
+echo "Sent SIGTERM to worker on gRPC port $port (PID $pid)."

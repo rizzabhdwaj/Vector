@@ -24,4 +24,7 @@ for port in {5001..5005}; do
   pids+=("$!")
 done
 
-wait -n
+# Keep the remaining workers alive when one exits. Ctrl+C still stops all.
+for pid in "${pids[@]}"; do
+  wait "$pid" || true
+done
