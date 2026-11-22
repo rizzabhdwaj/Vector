@@ -4,6 +4,7 @@ package internals
 
 import (
 	"os/exec"
+	"time"
 )
 
 type Response struct {
@@ -13,10 +14,12 @@ type Response struct {
 }
 
 func execute_task(id int32, command string, args []string) *Response {
+	started := time.Now()
 	cmd := exec.Command(command, args...)
 	out, err := cmd.Output()
 
 	success := err == nil
+	recordTaskResult(success, time.Since(started))
 
 	if !success {
 		return &Response{content: []byte(err.Error()), id: id, success: false}
