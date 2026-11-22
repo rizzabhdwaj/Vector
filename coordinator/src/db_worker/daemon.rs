@@ -12,31 +12,45 @@ impl Persister {
     }
 
     pub async fn run(mut self) -> Result<(), sqlx::Error> {
-        
-        
-
-        for let Some(ev) = self.rx.recv().await {
+        while let Some(ev) = self.rx.recv().await {
             eprintln!("persister received event: {ev:?}");
-            // Apply the event to the database
-            self.apply(&ev).await?;
+            // A failed write must not take down the coordinator; log it and keep draining.
+            if let Err(err) = self.apply(&ev).await {
+                eprintln!("persister failed to apply event: {err}");
+            }
         }
-        //Ok(())
+        Ok(())
     }
 
     async fn apply(&self, ev: &Event) -> Result<(), sqlx::Error> {
         match ev {
             Event::TaskAssigned { id, worker_id } => {
-                sqlx::query("UPDATE tasks SET status='running', worker_id=$2 WHERE id=$1")
+                sqlx::query("UPDATE tasks_pending SET status='running', worker=$2 WHERE id=$1")
                     .bind(*id as i64)
                     .bind(*worker_id)
                     .execute(&self.pool)
                     .await?;
             }
-            Event::TaskFinished { id, .. } => {
-                sqlx::query("UPDATE tasks SET status='completed' WHERE id=$1")
-                    .bind(*id as i64)
-                    .execute(&self.pool)
-                    .await?;
+            Event::TaskFinished { id, output, .. } => {
+                // Move the task out of the pending table once the worker reports back.
+                sqlx::query(
+                    "WITH moved AS (
+                         DELETE FROM tasks_pending WHERE id = $1
+                         RETURNING id, command, args, worker, created_at
+                     )
+                     INSERT INTO tasks_compleated (id, command, args, worker, output, created_at)
+                     SELECT id, command, args, worker, $2, created_at FROM moved
+                     ON CONFLICT (id) DO UPDATE SET
+                         command = EXCLUDED.command,
+                         args = EXCLUDED.args,
+                         worker = EXCLUDED.worker,
+                         output = EXCLUDED.output,
+                         created_at = EXCLUDED.created_at",
+                )
+                .bind(*id as i64)
+                .bind(output.as_str())
+                .execute(&self.pool)
+                .await?;
             }
             Event::WorkerDead { id } => {
                 sqlx::query("UPDATE workers SET status='dead' WHERE id=$1")

@@ -48,6 +48,16 @@ impl TaskQueue {
         self.outputs.push(out);
     }
 
+    /// Number of tasks currently waiting in the queue.
+    pub fn len(&self) -> usize {
+        self.content.len()
+    }
+
+    /// Whether the queue currently holds no tasks.
+    pub fn is_empty(&self) -> bool {
+        self.content.is_empty()
+    }
+
     /// Remove and return the next task, or `None` if the queue is empty.
     pub fn pop_task(&mut self) -> Option<Task> {
         if let Some(task) = self.content.front_mut() {

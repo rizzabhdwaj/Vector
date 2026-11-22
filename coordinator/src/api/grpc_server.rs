@@ -10,9 +10,11 @@ use heartbeat::{
 };
 use std::sync::{Arc, Mutex};
 
+use crate::api::metrics::Metrics;
 use crate::worker::workers::Workforce;
 struct HeartbeatService {
     workforce: Arc<Mutex<Workforce>>,
+    metrics: Arc<Metrics>,
 }
 
 #[tonic::async_trait]
@@ -29,12 +31,17 @@ impl Heartbeat for HeartbeatService {
             .map_err(|_| Status::internal("Workforce lock poisoned"))?
             .update_worker(heartbeat);
 
+        self.metrics.heartbeats_received.inc();
+
         Ok(Response::new(()))
     }
 }
 
-pub async fn grpc_server(workforce: Arc<Mutex<Workforce>>) -> Result<(), tonic::transport::Error> {
-    let service = HeartbeatService { workforce };
+pub async fn grpc_server(
+    workforce: Arc<Mutex<Workforce>>,
+    metrics: Arc<Metrics>,
+) -> Result<(), tonic::transport::Error> {
+    let service = HeartbeatService { workforce, metrics };
 
     Server::builder()
         .add_service(HeartbeatServer::new(service))

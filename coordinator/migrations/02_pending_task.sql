@@ -3,6 +3,6 @@ CREATE TABLE tasks_compleated(
     command TEXT UNIQUE NOT NULL,
     args TEXT[],
     worker NUMERIC ,
-    outptu TEXT ,
+    output TEXT ,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

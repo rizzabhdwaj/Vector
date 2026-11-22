@@ -18,8 +18,8 @@ function App() {
   const [workerError, setWorkerError] = useState('')
   const [outputs, setOutputs] = useState<TaskOutput[] | null>(null)
   const [outputError, setOutputError] = useState('')
-  const [command, setCommand] = useState('')
-  const [args, setArgs] = useState('')
+  const [command, setCommand] = useState('echo')
+  const [args, setArgs] = useState('hello world')
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ error: boolean; message: string } | null>(null)
 

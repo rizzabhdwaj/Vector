@@ -19,7 +19,8 @@ trap 'exit 143' TERM
 go build -o "$build_dir/worker" .
 
 for port in {5001..5005}; do
-  WORKER_ID="$port" WORKER_GRPC="localhost:$port" "$build_dir/worker" &
+  WORKER_ID="$port" WORKER_GRPC="localhost:$port" \
+    WORKER_METRICS="localhost:$((port + 4100))" "$build_dir/worker" &
   pids+=("$!")
 done
 
