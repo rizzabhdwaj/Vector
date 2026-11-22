@@ -1,0 +1,2 @@
+- frontend should access monitoring data through a socket server instead
+- allow execution of complex nested commands

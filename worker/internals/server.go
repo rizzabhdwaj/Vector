@@ -28,7 +28,7 @@ func (s *server) FetchTask(ctx context.Context, req *pb.TaskContent) (*pb.Result
 		status = "compleated"
 	}
 	
-	fmt.Printf("wtrker : %s %s %d\n", workerID, status, response.id)
+	fmt.Printf("worker : %s %s %d\n", workerID, status, response.id)
 	
 	return &pb.Result{
 		Content: []string{string(response.content)},

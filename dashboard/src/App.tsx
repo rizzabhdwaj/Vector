@@ -2,7 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react'
 
 type WorkerStatus = 'free' | 'busy' | 'dead'
 type Worker = { id: number; curr_status: WorkerStatus }
+type TaskStatus = 'Assigned' | 'Queued' | 'Failed'
+type Task = { id: number; command: string; args: string[]; status: TaskStatus }
 type TaskOutput = { task_id: number; output: string }
+type TaskQueueSnapshot = { content: Task[]; outputs: TaskOutput[] }
 
 const workerStatus: Record<WorkerStatus, { label: string; dot: string }> = {
   free: { label: 'Available', dot: 'bg-emerald-600' },
@@ -16,8 +19,8 @@ const inputClass = 'w-full rounded border border-zinc-300 bg-white px-3 py-2 fon
 function App() {
   const [workers, setWorkers] = useState<Worker[] | null>(null)
   const [workerError, setWorkerError] = useState('')
-  const [outputs, setOutputs] = useState<TaskOutput[] | null>(null)
-  const [outputError, setOutputError] = useState('')
+  const [queue, setQueue] = useState<TaskQueueSnapshot | null>(null)
+  const [queueError, setQueueError] = useState('')
   const [command, setCommand] = useState('echo')
   const [args, setArgs] = useState('hello world')
   const [submitting, setSubmitting] = useState(false)
@@ -61,19 +64,19 @@ function App() {
 
     async function refresh() {
       try {
-        const response = await fetch(`${apiUrl}/outputs`, {
+        const response = await fetch(`${apiUrl}/tasks`, {
           signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
           cache: 'no-store',
         })
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        const data: TaskOutput[] = await response.json()
+        const data: TaskQueueSnapshot = await response.json()
         if (!controller.signal.aborted) {
-          setOutputs(data.reverse())
-          setOutputError('')
+          setQueue(data)
+          setQueueError('')
         }
       } catch {
         if (!controller.signal.aborted) {
-          setOutputError('Could not load task outputs. Retrying automatically.')
+          setQueueError('Could not load tasks. Retrying automatically.')
         }
       } finally {
         if (!controller.signal.aborted) timer = setTimeout(refresh, 5000)
@@ -119,6 +122,9 @@ function App() {
       setSubmitting(false)
     }
   }
+
+  const outputs = queue?.outputs ? [...queue.outputs].reverse() : null
+  const queuedTasks = queue?.content ?? null
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-12">
@@ -189,29 +195,68 @@ function App() {
           </form>
         </section>
       </div>
-      <section aria-labelledby="outputs-heading" className="mt-10 border-t border-zinc-200 pt-6">
+      <section aria-labelledby="tasks-heading" className="mt-10 border-t border-zinc-200 pt-6">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 id="outputs-heading" className="text-base font-semibold">Task outputs</h2>
+          <h2 id="tasks-heading" className="text-base font-semibold">
+            Tasks {queue && <span className="ml-1 font-normal text-zinc-500">({queuedTasks?.length ?? 0} queued, {outputs?.length ?? 0} with output)</span>}
+          </h2>
           <span className="text-xs text-zinc-500">Refreshes every 5s</span>
         </div>
-        {outputError && <p role="alert" className="mb-3 text-sm text-red-700">{outputError}{outputs && ' Showing last known data.'}</p>}
-        {outputs?.length ? (
-          <div className="space-y-3">
-            {outputs.map((output, index) => (
-              <article key={`${output.task_id}-${outputs.length - index}`} className="min-w-0 overflow-hidden rounded border border-zinc-200">
-                <h3 className="border-b border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-medium">
-                  Task <span className="font-mono">{output.task_id}</span>
-                </h3>
-                <pre tabIndex={0} aria-label={`Output for task ${output.task_id}`} className="max-h-80 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-sm leading-6">{output.output || '(No output returned)'}</pre>
-              </article>
-            ))}
+        {queueError && <p role="alert" className="mb-3 text-sm text-red-700">{queueError}{queue && ' Showing last known data.'}</p>}
+
+        <div className="space-y-8">
+          <div>
+            <h3 className="mb-3 text-sm font-medium text-zinc-700">Queued / in-memory tasks</h3>
+            <div className="overflow-hidden rounded border border-zinc-200">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-zinc-200 bg-zinc-50 text-zinc-500">
+                  <tr>
+                    <th scope="col" className="px-4 py-3 font-medium">Task ID</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Command</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Args</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {queuedTasks?.map((task) => (
+                    <tr key={task.id}>
+                      <td className="px-4 py-3 font-mono">{task.id}</td>
+                      <td className="px-4 py-3 font-mono">{task.command}</td>
+                      <td className="px-4 py-3 font-mono text-zinc-600">{task.args.length ? task.args.join(' ') : '(none)'}</td>
+                      <td className="px-4 py-3">{task.status}</td>
+                    </tr>
+                  ))}
+                  {(!queuedTasks || queuedTasks.length === 0) && (
+                    <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
+                      {queue ? 'No queued tasks in memory.' : queueError ? 'Queued tasks unavailable.' : 'Loading tasks...'}
+                    </td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        ) : (
-          <p role="status" className="rounded border border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">
-            {outputs ? 'No outputs yet. Results will appear here after a worker runs a task.' : outputError ? 'Task outputs unavailable.' : 'Loading outputs...'}
-          </p>
-        )}
-        <p className="mt-3 text-xs text-zinc-500">Newest results first. Output does not indicate execution success; the coordinator does not report exit status.</p>
+
+          <div>
+            <h3 className="mb-3 text-sm font-medium text-zinc-700">Task outputs</h3>
+            {outputs?.length ? (
+              <div className="space-y-3">
+                {outputs.map((output, index) => (
+                  <article key={`${output.task_id}-${outputs.length - index}`} className="min-w-0 overflow-hidden rounded border border-zinc-200">
+                    <h3 className="border-b border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-medium">
+                      Task <span className="font-mono">{output.task_id}</span>
+                    </h3>
+                    <pre tabIndex={0} aria-label={`Output for task ${output.task_id}`} className="max-h-80 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-sm leading-6">{output.output || '(No output returned)'}</pre>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p role="status" className="rounded border border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">
+                {outputs ? 'No outputs yet. Results will appear here after a worker runs a task.' : queueError ? 'Task outputs unavailable.' : 'Loading outputs...'}
+              </p>
+            )}
+            <p className="mt-3 text-xs text-zinc-500">Newest results first. Output does not indicate execution success; the coordinator does not report exit status.</p>
+          </div>
+        </div>
       </section>
       <footer className="mt-12 border-t border-zinc-200 pt-4 text-xs leading-5 text-zinc-500">
         Trusted environments only. Submitted commands execute on your workers.

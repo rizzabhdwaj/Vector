@@ -66,6 +66,11 @@ impl TaskQueue {
         self.content.pop_front()
     }
 
+    /// Return all stored outputs without clearing them.
+    pub fn outputs(&self) -> &[Output] {
+        &self.outputs
+    }
+
     /// Consume and return all stored outputs, clearing the internal list.
     pub fn take_outputs(&mut self) -> Vec<Output> {
         std::mem::take(&mut self.outputs)
