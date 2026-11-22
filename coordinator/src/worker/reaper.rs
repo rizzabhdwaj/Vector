@@ -1,4 +1,3 @@
-use crate::api::metrics::Metrics;
 use crate::worker::workers::Workforce;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -10,15 +9,13 @@ use std::time::Duration;
 pub struct Reaper {
     workers: Arc<Mutex<Workforce>>,
     timeout: Duration,
-    metrics: Arc<Metrics>,
 }
 
 impl Reaper {
-    pub fn new(workers: Arc<Mutex<Workforce>>, timeout: Duration, metrics: Arc<Metrics>) -> Reaper {
+    pub fn new(workers: Arc<Mutex<Workforce>>, timeout: Duration) -> Reaper {
         Self {
             workers,
             timeout,
-            metrics,
         }
     }
 
@@ -28,7 +25,6 @@ impl Reaper {
             interval.tick().await;
             let dead = self.workers.lock().unwrap().reap_dead(self.timeout);
             for id in dead {
-                self.metrics.workers_reaped.inc();
                 println!(
                     "worker {id} declared DEAD (no heartbeat for {:?})",
                     self.timeout

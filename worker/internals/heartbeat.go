@@ -16,7 +16,6 @@ func Heartbeat(ctx context.Context, client pb.HeartbeatClient, workerID int32) {
 		WorkerId:  workerID,
 		Available: true,
 	})
-	recordHeartbeat(err)
 	if err != nil {
 		log.Printf("heartbeat failed for worker %d: %v", workerID, err)
 	}

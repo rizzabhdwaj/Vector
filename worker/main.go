@@ -52,6 +52,5 @@ func main() {
 	client := pb.NewHeartbeatClient(conn)
 
 	go periodicHeartbeat(context.Background(), client, int32(workerID))
-	go internals.StartMetricsServer()
 	internals.ProtoServer()
 }
