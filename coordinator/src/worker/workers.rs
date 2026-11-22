@@ -34,6 +34,13 @@ impl Workforce {
                 if gap > Duration::from_secs(6) {
                     println!("worker {} heartbeat gap: {:?}", i.id, gap);
                 }
+
+                // If the worker was previously marked dead, a heartbeat revives it.
+                if i.curr_status == WorkerStatus::Dead {
+                    i.curr_status = WorkerStatus::Free;
+                    println!("worker {} revived from dead state", i.id);
+                }
+
                 return;
             }
         }
