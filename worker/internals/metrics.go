@@ -89,6 +89,7 @@ func recordHeartbeat(err error) {
 func metricsMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/metric", promhttp.Handler())
 	return mux
 }
 

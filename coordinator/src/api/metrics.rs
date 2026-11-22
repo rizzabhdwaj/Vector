@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use actix_web::{HttpResponse, Responder, get, web};
+use actix_web::{HttpResponse, Responder, web};
 use prometheus_client::encoding::text::encode;
 use prometheus_client::metrics::counter::Counter;
 use prometheus_client::metrics::gauge::Gauge;
@@ -154,7 +154,6 @@ impl Default for Metrics {
     }
 }
 
-#[get("/metrics")]
 async fn metrics_handler(
     metrics: web::Data<Metrics>,
     workforce: web::Data<Mutex<Workforce>>,
@@ -177,5 +176,40 @@ async fn metrics_handler(
 /// Register the metrics route. Kept here so the route and its handler live in
 /// the same module.
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(metrics_handler);
+    cfg.route("/metrics", web::get().to(metrics_handler))
+        .route("/metric", web::get().to(metrics_handler));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{App, test};
+
+    #[actix_web::test]
+    async fn routes_export_counters_and_current_worker_gauges() {
+        let metrics = web::Data::new(Metrics::new());
+        metrics.tasks_completed.inc();
+        let mut workforce = Workforce::init_workforce();
+        workforce.update_worker(crate::api::grpc_server::heartbeat::HeartbeatRequest {
+            worker_id: 5001,
+            available: true,
+        });
+        let app = test::init_service(
+            App::new()
+                .app_data(metrics)
+                .app_data(web::Data::new(Mutex::new(workforce)))
+                .app_data(web::Data::new(Mutex::new(TaskQueue::create_queue())))
+                .configure(configure),
+        ).await;
+
+        for path in ["/metric", "/metrics"] {
+            let response = test::call_service(&app, test::TestRequest::get().uri(path).to_request()).await;
+            assert!(response.status().is_success());
+            let body = test::read_body(response).await;
+            let body = std::str::from_utf8(&body).unwrap();
+            assert!(body.contains("coordinator_tasks_completed_total 1"));
+            assert!(body.contains("coordinator_workers_free 1"));
+            assert!(body.contains("# EOF"));
+        }
+    }
 }
