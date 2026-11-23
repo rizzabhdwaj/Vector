@@ -7,11 +7,16 @@ npm install
 npm run dev
 ```
 
-The dashboard connects to port 3030 on the browser's current hostname by default.
-To use another coordinator, set `VITE_API_BASE_URL` in `.env.local` (see
-`.env.example`) and restart Vite. This value is embedded at build time.
+Vite proxies `/vector-api` to `127.0.0.1:3030` (stripping the prefix) and
+`/vector-ws` to `127.0.0.1:3031`. Run Vite and the coordinator on the same
+host. Workers send heartbeats to the coordinator on gRPC port `50052`.
 
-Workers refresh every five seconds. The table shows registered workers and their
+For a deployed dashboard, configure those same routes on your reverse proxy,
+or set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` to browser-reachable endpoints
+before building. The WebSocket listener is local to the coordinator host. An
+HTTPS deployment should expose the WebSocket endpoint over `wss://`.
+
+Workers and tasks update over the WebSocket. The worker table shows registered workers and their
 reported availability, not verified liveness. Tasks are submitted to the shared
 queue, not to a selected worker. A submission confirmation means queued, not
 successfully executed.

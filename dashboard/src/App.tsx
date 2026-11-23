@@ -13,7 +13,9 @@ const workerStatus: Record<WorkerStatus, { label: string; dot: string }> = {
   dead: { label: 'Dead', dot: 'bg-black' },
 }
 
-const apiUrl = (import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:3030`).replace(/\/$/, '')
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+const apiUrl = (import.meta.env.VITE_API_BASE_URL || '/vector-api').replace(/\/$/, '')
+const wsUrl = import.meta.env.VITE_WS_BASE_URL || `${wsProtocol}//${window.location.host}/vector-ws`
 const inputClass = 'w-full rounded border border-zinc-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 disabled:opacity-60'
 
 function App() {
@@ -27,66 +29,45 @@ function App() {
   const [result, setResult] = useState<{ error: boolean; message: string } | null>(null)
 
   useEffect(() => {
-    const controller = new AbortController()
-    let timer: ReturnType<typeof setTimeout>
+    let ws: WebSocket | undefined
+    let retry: ReturnType<typeof setTimeout> | undefined
 
-    async function refresh() {
-      try {
-        const response = await fetch(`${apiUrl}/workforce`, {
-          signal: controller.signal,
-          cache: 'no-store',
-        })
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        const data: { workers: Worker[] } = await response.json()
-        if (!controller.signal.aborted) {
-          setWorkers(data.workers.sort((a, b) => a.id - b.id))
-          setWorkerError('')
+    function connect() {
+      const socket = new WebSocket(wsUrl)
+      ws = socket
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (Array.isArray(data.workers)) {
+            setWorkers(data.workers)
+            setWorkerError('')
+          }
+          if (Array.isArray(data.tasks) && Array.isArray(data.outputs)) {
+            setQueue({ content: data.tasks, outputs: data.outputs })
+            setQueueError('')
+          }
+        } catch (error) {
+          console.error(error)
         }
-      } catch {
-        if (!controller.signal.aborted) {
-          setWorkerError('Cannot reach the coordinator. Check that it is running and accessible.')
-        }
-      } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, 50)
+      }
+
+      socket.onclose = () => {
+        const message = 'Disconnected from the coordinator. Retrying…'
+        setWorkerError(message)
+        setQueueError(message)
+        retry = setTimeout(connect, 5000)
       }
     }
 
-    void refresh()
+    connect()
     return () => {
-      controller.abort()
-      clearTimeout(timer)
-    }
-  }, [])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    let timer: ReturnType<typeof setTimeout>
-
-    async function refresh() {
-      try {
-        const response = await fetch(`${apiUrl}/tasks`, {
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
-          cache: 'no-store',
-        })
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        const data: TaskQueueSnapshot = await response.json()
-        if (!controller.signal.aborted) {
-          setQueue(data)
-          setQueueError('')
-        }
-      } catch {
-        if (!controller.signal.aborted) {
-          setQueueError('Could not load tasks. Retrying automatically.')
-        }
-      } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, 5000)
+      clearTimeout(retry)
+      if (ws) {
+        ws.onclose = null
+        ws.onmessage = null
+        ws.close()
       }
-    }
-
-    void refresh()
-    return () => {
-      controller.abort()
-      clearTimeout(timer)
     }
   }, [])
 
@@ -139,7 +120,7 @@ function App() {
             <h2 id="workers-heading" className="text-base font-semibold">
               Workers {workers && <span className="ml-1 font-normal text-zinc-500">({workers.length})</span>}
             </h2>
-            <span className="text-xs text-zinc-500">Refreshes ever- VERY FAST!</span>
+            <span className="text-xs text-zinc-500">Real-time via WebSocket</span>
           </div>
           {workerError && <p role="alert" className="mb-3 text-sm text-red-700">{workerError}{workers && ' Showing last known data.'}</p>}
           <div className="overflow-hidden rounded border border-zinc-200">
@@ -200,7 +181,7 @@ function App() {
           <h2 id="tasks-heading" className="text-base font-semibold">
             Tasks {queue && <span className="ml-1 font-normal text-zinc-500">({queuedTasks?.length ?? 0} queued, {outputs?.length ?? 0} with output)</span>}
           </h2>
-          <span className="text-xs text-zinc-500">Refreshes every 5s</span>
+          <span className="text-xs text-zinc-500">Real-time via WebSocket</span>
         </div>
         {queueError && <p role="alert" className="mb-3 text-sm text-red-700">{queueError}{queue && ' Showing last known data.'}</p>}
 

@@ -1,28 +1,13 @@
 use actix_cors::Cors;
-use actix_web::{App, HttpResponse, HttpServer, get, post, web};
+use actix_web::{get, App, HttpResponse, HttpServer, post, web};
 use sqlx::PgPool;
 use std::sync::{Arc, Mutex};
 
 use crate::api::metrics::Metrics;
 use crate::task_queue::queue::{Task, TaskQueue};
 use crate::worker::workers::Workforce;
+use tokio::sync::mpsc;
 const PORT: u16 = 3030;
-
-#[get("/workforce")]
-async fn get_workforce(workforce: web::Data<Mutex<Workforce>>) -> HttpResponse {
-    match workforce.lock() {
-        Ok(workforce) => HttpResponse::Ok().json(&*workforce),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
-}
-
-#[get("/tasks")]
-async fn get_tasks(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
-    match queue.lock() {
-        Ok(queue) => HttpResponse::Ok().json(&*queue),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
-}
 
 #[get("/outputs")]
 async fn get_outputs(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
@@ -83,11 +68,8 @@ pub async fn api_gateway(
             .app_data(metrics.clone())
             .app_data(pool.clone())
             .wrap(Cors::permissive())
-            .configure(crate::api::metrics::configure)
-            .service(get_workforce)
-            .service(create_task)
-            .service(get_tasks)
             .service(get_outputs)
+            .service(create_task)
     })
     .bind(("0.0.0.0", PORT))?;
 

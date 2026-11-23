@@ -1,22 +1,21 @@
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use std::collections::VecDeque;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Status {
     Assigned,
     Queued,
     Failed, // will be requeued or assigned to a different worker ig
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Task {
     pub(crate) id: u32,
     pub(crate) command: String,
     pub(crate) args: Vec<String>,
     status: Status,
 }
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Output {
     pub(crate) output: String,
     pub(crate) task_id: u32,
@@ -46,6 +45,11 @@ impl TaskQueue {
     /// Push a task output (e.g. after execution completes).
     pub fn push_output(&mut self, out: Output) {
         self.outputs.push(out);
+    }
+
+    /// All tasks currently in the queue (queued or assigned).
+    pub fn tasks(&self) -> &VecDeque<Task> {
+        &self.content
     }
 
     /// Number of tasks currently waiting in the queue.

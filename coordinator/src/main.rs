@@ -3,6 +3,7 @@ mod db_worker;
 mod scheduler;
 mod task_queue;
 mod worker;
+mod ws_server;
 use std::time::Duration;
 
 use crate::api::metrics::Metrics;
@@ -28,7 +29,6 @@ async fn main() -> std::io::Result<()> {
     let metrics = Arc::new(Metrics::new());
 
     let (persist_tx, persist_rx) = tokio::sync::mpsc::channel(16);
-
     let persister = daemon::Persister::new(persist_rx, pool.clone());
 
     let scheduler = Scheduler::init_scheduler(
@@ -47,10 +47,11 @@ async fn main() -> std::io::Result<()> {
     tokio::select! {
         _ = scheduler.run() => Ok(()),
         _ = reaper.run() => Ok(()),
-        _ = persister.run() => Ok(()),
+        result = persister.run() => result.map_err(std::io::Error::other),
         result = api_server::api_gateway(Arc::clone(&work_force), Arc::clone(&task_q), Arc::clone(&metrics), pool) => result,
         result = grpc_server::grpc_server(Arc::clone(&work_force), Arc::clone(&metrics)) => {
             result.map_err(std::io::Error::other)
         }
+        result = ws_server::start_ws_server(Arc::clone(&work_force), Arc::clone(&task_q)) => result,
     }
 }

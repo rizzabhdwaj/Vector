@@ -1,10 +1,8 @@
 use crate::api::metrics::Metrics;
 use crate::task_queue::queue::{Output, Status, TaskQueue};
 use crate::worker::workers::{WorkerStatus, Workforce};
-use sqlx::PgPool;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
-use tokio::sync::mpsc;
 use crate::scheduler::event::Event;
 
 mod task_rpc {
