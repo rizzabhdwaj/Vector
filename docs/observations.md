@@ -66,6 +66,14 @@ worker 5002 heartbeat gap: 15.04231619s
     - if the task remains "Running" for > TIME_LIMIT , reassigned it to a new worker 
     - DO NOT re-queue it 
     
-    ##### WAY 2 
+    ##### WAY 2 (BAD WAY IMO)
     - keep checking the heartbeat of the assigned worker 
-    - if heartbeat died while task remains "Running"
+    - if heartbeat died while task remains "Running" reassigned it to a new worker 
+
+##### OK BUT Suppose:
+- Worker A receives a task with a 120-second timeout.
+- Worker A crashes after 2 seconds.
+- The scheduler waits another 118 seconds before recovering the task.
+
+### So we are going to check both `Task_Timeout`and Worker Heartbeat before rescheduling the task to diffrent worker
+
