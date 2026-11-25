@@ -141,6 +141,7 @@ within about five seconds of their first heartbeat. See
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/tasks` | Persist and enqueue a task; body is `{ "id", "command", "args", "status", "timelimit" }` (`timelimit` is seconds and defaults to `15`) |
+| `GET` | `/queue` | Inspect the whole in-memory task queue (scheduled, re-scheduled tasks, outputs) |
 | `GET` | `/outputs` | List task outputs currently held in memory |
 | `GET` | `/metric`, `/metrics` | Prometheus exposition format |
 

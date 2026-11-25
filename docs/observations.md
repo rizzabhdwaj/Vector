@@ -9,7 +9,7 @@
 ```rust
             for worker in &mut workers.workers {
                 if worker.available {
-                    let Some(task) = tasks.content.pop_front() else {
+                    let Some(task) = tasks.scheduled.pop_front() else {
                         break;
                     };
                     println!("assigned task {0} to worker {1}", task.id, worker.id);

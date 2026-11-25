@@ -1,4 +1,5 @@
 use crate::api::grpc_server::heartbeat::HeartbeatRequest;
+use crate::task_queue::queue::Task;
 use std::time::{Duration, Instant};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
@@ -13,8 +14,8 @@ pub(crate) enum WorkerStatus {
 pub(crate) struct Worker {
     pub(crate) id: i32,
     pub(crate) curr_status: WorkerStatus,
-    /// IDs of tasks assigned to this worker that have not finished yet.
-    pub(crate) task_assigned: Vec<u32>,
+    /// Tasks assigned to this worker that have not finished yet.
+    pub(crate) task_assigned: Vec<Task>,
     #[serde(skip)]
     pub(crate) last_seen: Instant,
 }
@@ -61,7 +62,7 @@ impl Workforce {
     /// Drop a task from a worker once it is no longer pending (completed or failed).
     pub(crate) fn finish_task(&mut self, worker_id: i32, task_id: u32) {
         if let Some(worker) = self.workers.iter_mut().find(|w| w.id == worker_id) {
-            worker.task_assigned.retain(|id| *id != task_id);
+            worker.task_assigned.retain(|task| task.id != task_id);
         }
     }
 
@@ -98,10 +99,23 @@ mod tests {
             worker_id: 5001,
             available: true,
         });
-        workforce.workers[0].task_assigned.extend([7, 8]);
+        for id in [7, 8] {
+            let task: Task = serde_json::from_str(&format!(
+                r#"{{"id":{id},"command":"echo","args":[],"status":"Queued"}}"#
+            ))
+            .unwrap();
+            workforce.workers[0].task_assigned.push(task);
+        }
 
         workforce.finish_task(5001, 7);
 
-        assert_eq!(workforce.workers[0].task_assigned, vec![8]);
+        assert_eq!(
+            workforce.workers[0]
+                .task_assigned
+                .iter()
+                .map(|task| task.id)
+                .collect::<Vec<_>>(),
+            vec![8]
+        );
     }
 }

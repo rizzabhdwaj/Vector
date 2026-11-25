@@ -32,7 +32,7 @@ pub struct Output {
 
 #[derive(Debug, Serialize)]
 pub struct TaskQueue {
-    content: VecDeque<Task>,
+    scheduled: VecDeque<Task>,
     re_scheduled: VecDeque<Task>,
 
     outputs: Vec<Output>,
@@ -42,7 +42,7 @@ pub struct TaskQueue {
 impl TaskQueue {
     pub fn create_queue() -> TaskQueue {
         TaskQueue {
-            content: VecDeque::new(),
+            scheduled: VecDeque::new(),
             outputs: Vec::new(),
             re_scheduled: VecDeque::new(),
         }
@@ -51,7 +51,7 @@ impl TaskQueue {
     /// Insert a new task into the queue.
     pub fn new_task(&mut self, mut tsk: Task) {
         tsk.status = Status::Queued;
-        self.content.push_back(tsk);
+        self.scheduled.push_back(tsk);
     }
     pub fn re_schedule(&mut self, tsk: Task) {
         self.re_scheduled.push_back(tsk);
@@ -63,15 +63,15 @@ impl TaskQueue {
 
     /// All tasks currently in the queue (queued or running).
     pub fn tasks(&self) -> &VecDeque<Task> {
-        &self.content
+        &self.scheduled
     }
 
     /// Remove and return the next task, or `None` if the queue is empty.
     pub fn pop_task(&mut self) -> Option<Task> {
-        if let Some(task) = self.content.front_mut() {
+        if let Some(task) = self.scheduled.front_mut() {
             task.status = Status::Running;
         }
-        self.content.pop_front()
+        self.scheduled.pop_front()
     }
 
     /// Return all stored outputs without clearing them.

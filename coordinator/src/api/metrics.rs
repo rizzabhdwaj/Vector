@@ -136,7 +136,7 @@ impl Metrics {
         self.workers_free.set(free);
         self.workers_busy.set(busy);
         self.workers_dead.set(dead);
-        self.tasks_queued.set(queue.len() as i64);
+        self.tasks_queued.set(queue.tasks().len() as i64);
     }
 
     /// Encode the registry using the Prometheus/OpenMetrics text format.

@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
 type WorkerStatus = 'free' | 'busy' | 'dead'
-type Worker = { id: number; curr_status: WorkerStatus; task_assigned: number[] }
+type Worker = { id: number; curr_status: WorkerStatus; task_assigned: Task[] }
 type TaskStatus = 'Running' | 'Queued' | 'Failed'
 type Task = { id: number; command: string; args: string[]; status: TaskStatus; timelimit: number }
 type TaskOutput = { task_id: number; output: string }
-type TaskQueueSnapshot = { content: Task[]; outputs: TaskOutput[] }
+type TaskQueueSnapshot = { scheduled: Task[]; outputs: TaskOutput[] }
 
 const workerStatus: Record<WorkerStatus, { label: string; dot: string }> = {
   free: { label: 'Available', dot: 'bg-emerald-600' },
@@ -45,7 +45,7 @@ function App() {
             setWorkerError('')
           }
           if (Array.isArray(data.tasks) && Array.isArray(data.outputs)) {
-            setQueue({ content: data.tasks, outputs: data.outputs })
+            setQueue({ scheduled: data.tasks, outputs: data.outputs })
             setQueueError('')
           }
         } catch (error) {
@@ -112,7 +112,7 @@ function App() {
   }
 
   const outputs = queue?.outputs ? [...queue.outputs].reverse() : null
-  const queuedTasks = queue?.content ?? null
+  const queuedTasks = queue?.scheduled ?? null
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-12">
@@ -152,7 +152,7 @@ function App() {
                         </span>
                       </td>
                       <td className="px-4 py-3 font-mono text-zinc-600">
-                        {worker.task_assigned?.length ? worker.task_assigned.join(', ') : '—'}
+                        {worker.task_assigned?.length ? worker.task_assigned.map((task) => task.id).join(', ') : '—'}
                       </td>
                     </tr>
                   )

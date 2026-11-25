@@ -1,5 +1,8 @@
 mod api;
 mod db_worker;
+mod rescheduler {
+    pub mod manager;
+}
 mod scheduler;
 mod task_queue;
 mod worker;
@@ -9,6 +12,7 @@ use std::time::Duration;
 use crate::api::metrics::Metrics;
 use crate::api::{api_server, db, grpc_server};
 use crate::db_worker::daemon;
+use crate::rescheduler::manager::orphan_mgr;
 use crate::scheduler::schedule_task::Scheduler;
 use crate::task_queue::queue::TaskQueue;
 use crate::worker::reaper::Reaper;
@@ -44,9 +48,12 @@ async fn main() -> std::io::Result<()> {
         Arc::clone(&metrics),
     );
 
+    let orphan_manager = orphan_mgr::new(Arc::clone(&work_force), Arc::clone(&task_q));
+
     tokio::select! {
         _ = scheduler.run() => Ok(()),
         _ = reaper.run() => Ok(()),
+        _ = orphan_manager.run() => Ok(()),
         result = persister.run() => result.map_err(std::io::Error::other),
         result = api_server::api_gateway(Arc::clone(&work_force), Arc::clone(&task_q), Arc::clone(&metrics), pool) => result,
         result = grpc_server::grpc_server(Arc::clone(&work_force), Arc::clone(&metrics)) => {

@@ -17,6 +17,14 @@ async fn get_outputs(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
     }
 }
 
+#[get("/queue")]
+async fn get_queue(queue: web::Data<Mutex<TaskQueue>>) -> HttpResponse {
+    match queue.lock() {
+        Ok(queue) => HttpResponse::Ok().json(&*queue),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
 #[post("/tasks")]
 async fn create_task(
     queue: web::Data<Mutex<TaskQueue>>,
@@ -73,10 +81,38 @@ pub async fn api_gateway(
             .app_data(pool.clone())
             .wrap(Cors::permissive())
             .service(get_outputs)
+            .service(get_queue)
             .service(create_task)
     })
     .bind(("0.0.0.0", PORT))?;
 
     println!("HTTP server running on {}", PORT);
     server.run().await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{App, test};
+    use serde_json::{Value, json};
+
+    #[actix_web::test]
+    async fn queue_route_returns_the_whole_queue() {
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(Mutex::new(TaskQueue::create_queue())))
+                .service(get_queue),
+        )
+        .await;
+
+        let response = test::call_service(
+            &app,
+            test::TestRequest::get().uri("/queue").to_request(),
+        )
+        .await;
+        assert!(response.status().is_success());
+
+        let body: Value = serde_json::from_slice(&test::read_body(response).await).unwrap();
+        assert_eq!(body, json!({ "scheduled": [], "re_scheduled": [], "outputs": [] }));
+    }
 }

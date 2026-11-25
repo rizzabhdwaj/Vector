@@ -57,7 +57,7 @@ impl Scheduler {
                 break;
             };
             worker.curr_status = WorkerStatus::Busy;
-            worker.task_assigned.push(task.id);
+            worker.task_assigned.push(task.clone());
             let worker_id = worker.id;
             let tasks = Arc::clone(&self.tasks);
             let workers = Arc::clone(&self.workers);
