@@ -109,8 +109,8 @@ impl Scheduler {
                             output: format!("Dispatch failed for worker {worker_id}: {error}"),
                             task_id: task.id,
                         });
-                        // The task never reached the worker, so it is not pending there.
-                        lock(&workers).finish_task(worker_id, task.id);
+                        // Keep the task assigned: TaskRecovery will re-schedule it
+                        // once this worker is confirmed dead.
                         return;
                     }
                 };

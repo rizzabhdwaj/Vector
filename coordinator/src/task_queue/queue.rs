@@ -66,12 +66,14 @@ impl TaskQueue {
         &self.scheduled
     }
 
-    /// Remove and return the next task, or `None` if the queue is empty.
+    /// Remove and return the next task, preferring recovered tasks.
     pub fn pop_task(&mut self) -> Option<Task> {
-        if let Some(task) = self.scheduled.front_mut() {
-            task.status = Status::Running;
-        }
-        self.scheduled.pop_front()
+        let mut task = self
+            .re_scheduled
+            .pop_front()
+            .or_else(|| self.scheduled.pop_front())?;
+        task.status = Status::Running;
+        Some(task)
     }
 
     /// Return all stored outputs without clearing them.
@@ -104,5 +106,23 @@ mod tests {
         )
         .unwrap();
         assert_eq!(task.timelimit, 42);
+    }
+
+    #[test]
+    fn pop_task_runs_re_scheduled_tasks_first() {
+        let mut queue = TaskQueue::create_queue();
+        queue.re_schedule(Task {
+            id: 7,
+            command: "echo".into(),
+            args: Vec::new(),
+            timelimit: DEFAULT_TASK_TIMELIMIT,
+            status: Status::Running,
+        });
+
+        let task = queue.pop_task().unwrap();
+
+        assert_eq!(task.id, 7);
+        assert!(matches!(task.status, Status::Running));
+        assert!(queue.tasks().is_empty());
     }
 }

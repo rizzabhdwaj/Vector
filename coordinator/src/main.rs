@@ -50,11 +50,16 @@ async fn main() -> std::io::Result<()> {
 
     let orphan_manager = orphan_mgr::new(Arc::clone(&work_force), Arc::clone(&task_q));
 
+    tokio::spawn(scheduler.run());
+    tokio::spawn(reaper.run());
+    tokio::spawn(async move {
+        if let Err(err) = persister.run().await {
+            eprintln!("persister stopped: {err}");
+        }
+    });
+    tokio::spawn(orphan_manager.run());
+
     tokio::select! {
-        _ = scheduler.run() => Ok(()),
-        _ = reaper.run() => Ok(()),
-        _ = orphan_manager.run() => Ok(()),
-        result = persister.run() => result.map_err(std::io::Error::other),
         result = api_server::api_gateway(Arc::clone(&work_force), Arc::clone(&task_q), Arc::clone(&metrics), pool) => result,
         result = grpc_server::grpc_server(Arc::clone(&work_force), Arc::clone(&metrics)) => {
             result.map_err(std::io::Error::other)
