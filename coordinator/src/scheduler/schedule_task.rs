@@ -86,6 +86,7 @@ impl Scheduler {
                             id,
                             command: task.command,
                             args: task.args,
+                            timelimit: task.timelimit,
                         })
                         .await
                         .map(|response| response.into_inner())

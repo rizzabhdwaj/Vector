@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use std::sync::{Arc, Mutex};
 
 use crate::api::metrics::Metrics;
-use crate::task_queue::queue::{Task, TaskQueue};
+use crate::task_queue::queue::{Task, TaskQueue, DEFAULT_TASK_TIMELIMIT};
 use crate::worker::workers::Workforce;
 use tokio::sync::mpsc;
 const PORT: u16 = 3030;
@@ -24,15 +24,19 @@ async fn create_task(
     pool: web::Data<PgPool>,
     body: web::Json<Task>,
 ) -> HttpResponse {
-    let task = body.into_inner();
+    let mut task = body.into_inner();
+    if task.timelimit == 0 {
+        task.timelimit = DEFAULT_TASK_TIMELIMIT;
+    }
 
     if let Err(err) = sqlx::query(
-        "INSERT INTO tasks_pending (id, command, args, status) VALUES ($1, $2, $3, 'queued')
-         ON CONFLICT (id) DO UPDATE SET command = EXCLUDED.command, args = EXCLUDED.args, status = 'queued'",
+        "INSERT INTO tasks_pending (id, command, args, status, timelimit) VALUES ($1, $2, $3, 'queued', $4)
+         ON CONFLICT (id) DO UPDATE SET command = EXCLUDED.command, args = EXCLUDED.args, status = 'queued', timelimit = EXCLUDED.timelimit",
     )
     .bind(task.id as i64)
     .bind(&task.command)
     .bind(&task.args)
+    .bind(task.timelimit as i64)
     .execute(pool.get_ref())
     .await
     {

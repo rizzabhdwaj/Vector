@@ -39,7 +39,8 @@ Browser ──HTTP / WebSocket──▶ Dashboard (Vite dev proxy)
    `tasks_pending` and adds it to an in-memory FIFO queue.
 2. The scheduler polls for workers marked free and calls their `FetchTask` gRPC
    method (worker port equals its worker ID).
-3. The worker executes the command without a shell and returns its output.
+3. The worker executes the command without a shell, stops it at the requested
+   `timelimit`, and returns its output.
 4. The coordinator stores the output, frees the worker, and broadcasts new
    worker/queue snapshots to every WebSocket client.
 5. Workers send heartbeats to coordinator gRPC port `50052`. A reaper marks
@@ -139,7 +140,7 @@ within about five seconds of their first heartbeat. See
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/tasks` | Persist and enqueue a task; body is `{ "id", "command", "args", "status" }` |
+| `POST` | `/tasks` | Persist and enqueue a task; body is `{ "id", "command", "args", "status", "timelimit" }` (`timelimit` is seconds and defaults to `15`) |
 | `GET` | `/outputs` | List task outputs currently held in memory |
 | `GET` | `/metric`, `/metrics` | Prometheus exposition format |
 

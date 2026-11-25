@@ -20,7 +20,7 @@ The central component responsible for managing tasks, scheduling execution, and 
 ### API Server
 
 - Exposes HTTP REST endpoints for client communication.
-- Validates incoming requests and creates tasks.
+- Validates incoming requests, including each task's time limit, and creates tasks.
 - Enqueues tasks and handles status queries.
 
 ### Task Queue
@@ -40,7 +40,7 @@ The central component responsible for managing tasks, scheduling execution, and 
 A collection of independent workers responsible for executing tasks assigned by the coordinator.
 
 - Receives tasks from the scheduler.
-- Executes assigned tasks.
+- Executes assigned tasks and stops them at the requested time limit.
 - Reports execution results and failures.
 - Sends periodic heartbeats to the coordinator.
 

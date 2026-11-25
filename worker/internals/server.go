@@ -19,7 +19,7 @@ type server struct {
 func (s *server) FetchTask(ctx context.Context, req *pb.TaskContent) (*pb.Result, error) {
 
 	//execute task
-	response := execute_task(req.GetId(), req.GetCommand(), req.GetArgs())
+	response := execute_task(req.GetId(), req.GetCommand(), req.GetArgs(), req.GetTimelimit())
 	workerID := os.Getenv("WORKER_GRPC")
 	
 	status := "failed"

@@ -75,5 +75,4 @@ worker 5002 heartbeat gap: 15.04231619s
 - Worker A crashes after 2 seconds.
 - The scheduler waits another 118 seconds before recovering the task.
 
-### So we are going to check both `Task_Timeout`and Worker Heartbeat before rescheduling the task to diffrent worker
-
+### So we are going to check both `Task_Timeout`and Worker Heartbeat before rescheduling the task to diffrent work### - TASK STARVATIONS !! -> we gotta execute the taks from the rescheduled queue and the normal queue in such a way that one queue dosent block each other too much , will fix this after implimenting the recovery system properly

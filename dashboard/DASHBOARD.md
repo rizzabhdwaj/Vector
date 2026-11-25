@@ -25,6 +25,9 @@ Enter an executable in Command and one argument per line in Arguments. Leave
 Arguments empty for a command with no arguments. Spaces within each line are
 preserved; do not add shell quotes. Shell pipelines and redirects are not parsed.
 
+Time limit sets how long the worker runs the command, in seconds. Leave it blank
+to use the 15-second default.
+
 The coordinator has no authentication and workers execute the submitted commands.
 Keep both the dashboard and coordinator on a trusted network.
 

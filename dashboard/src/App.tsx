@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 type WorkerStatus = 'free' | 'busy' | 'dead'
 type Worker = { id: number; curr_status: WorkerStatus }
 type TaskStatus = 'Running' | 'Queued' | 'Failed'
-type Task = { id: number; command: string; args: string[]; status: TaskStatus }
+type Task = { id: number; command: string; args: string[]; status: TaskStatus; timelimit: number }
 type TaskOutput = { task_id: number; output: string }
 type TaskQueueSnapshot = { content: Task[]; outputs: TaskOutput[] }
 
@@ -25,6 +25,7 @@ function App() {
   const [queueError, setQueueError] = useState('')
   const [command, setCommand] = useState('echo')
   const [args, setArgs] = useState('hello world')
+  const [timelimit, setTimelimit] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ error: boolean; message: string } | null>(null)
 
@@ -74,6 +75,11 @@ function App() {
   async function submitTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!command.trim() || submitting) return
+    const limit = timelimit.trim() === '' ? 15 : Number(timelimit)
+    if (!Number.isInteger(limit) || limit < 1) {
+      setResult({ error: true, message: 'Time limit must be a whole number of seconds (at least 1).' })
+      return
+    }
     setSubmitting(true)
     setResult(null)
     // The scheduler converts task IDs to signed 32-bit integers.
@@ -87,11 +93,12 @@ function App() {
           command: command.trim(),
           args: args === '' ? [] : args.replace(/\r\n/g, '\n').split('\n'),
           status: 'Running',
+          timelimit: limit,
         }),
         signal: AbortSignal.timeout(15000),
       })
       if (!response.ok) throw new Error(`Coordinator returned HTTP ${response.status}.`)
-      setResult({ error: false, message: `Task ${id} queued. It will run when a worker is available.` })
+      setResult({ error: false, message: `Task ${id} queued with a ${limit}s time limit. It will run when a worker is available.` })
     } catch (error) {
       setResult({
         error: true,
@@ -169,6 +176,11 @@ function App() {
               <textarea id="arguments" className={`${inputClass} min-h-32 resize-y`} rows={5} placeholder="Hello from Vector" value={args} onChange={(event) => setArgs(event.target.value)} disabled={submitting} spellCheck={false} aria-describedby="arguments-help" />
               <p id="arguments-help" className="mt-2 text-xs leading-5 text-zinc-500">One argument per line. Spaces are preserved; no shell quoting needed. Commands run directly, without a shell.</p>
             </div>
+            <div>
+              <label htmlFor="timelimit" className="mb-2 block text-sm font-medium">Time limit <span className="font-normal text-zinc-500">(seconds, optional)</span></label>
+              <input id="timelimit" type="number" min="1" step="1" className={inputClass} placeholder="15" value={timelimit} onChange={(event) => setTimelimit(event.target.value)} disabled={submitting} aria-describedby="timelimit-help" />
+              <p id="timelimit-help" className="mt-2 text-xs leading-5 text-zinc-500">Leave blank to use the 15-second default. The worker stops the command when its time limit is reached.</p>
+            </div>
             <button type="submit" disabled={submitting || !command.trim()} className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-40">
               {submitting ? 'Submitting...' : 'Submit task'}
             </button>
@@ -195,6 +207,7 @@ function App() {
                     <th scope="col" className="px-4 py-3 font-medium">Task ID</th>
                     <th scope="col" className="px-4 py-3 font-medium">Command</th>
                     <th scope="col" className="px-4 py-3 font-medium">Args</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Time limit</th>
                     <th scope="col" className="px-4 py-3 font-medium">Status</th>
                   </tr>
                 </thead>
@@ -204,11 +217,12 @@ function App() {
                       <td className="px-4 py-3 font-mono">{task.id}</td>
                       <td className="px-4 py-3 font-mono">{task.command}</td>
                       <td className="px-4 py-3 font-mono text-zinc-600">{task.args.length ? task.args.join(' ') : '(none)'}</td>
+                      <td className="px-4 py-3 font-mono">{task.timelimit ?? 15}s</td>
                       <td className="px-4 py-3">{task.status}</td>
                     </tr>
                   ))}
                   {(!queuedTasks || queuedTasks.length === 0) && (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
                       {queue ? 'No queued tasks in memory.' : queueError ? 'Queued tasks unavailable.' : 'Loading tasks...'}
                     </td></tr>
                   )}

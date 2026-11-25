@@ -22,10 +22,12 @@ const (
 )
 
 type TaskContent struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Command       string                 `protobuf:"bytes,2,opt,name=command,proto3" json:"command,omitempty"`
-	Args          []string               `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Id      int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Command string                 `protobuf:"bytes,2,opt,name=command,proto3" json:"command,omitempty"`
+	Args    []string               `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty"`
+	// Execution time limit in seconds, supplied by the task request.
+	Timelimit     uint32 `protobuf:"varint,4,opt,name=timelimit,proto3" json:"timelimit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -79,6 +81,13 @@ func (x *TaskContent) GetArgs() []string {
 		return x.Args
 	}
 	return nil
+}
+
+func (x *TaskContent) GetTimelimit() uint32 {
+	if x != nil {
+		return x.Timelimit
+	}
+	return 0
 }
 
 type Result struct {
@@ -145,11 +154,12 @@ var File_proto_task_proto protoreflect.FileDescriptor
 
 const file_proto_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10proto/task.proto\x12\x04task\"K\n" +
+	"\x10proto/task.proto\x12\x04task\"i\n" +
 	"\vTaskContent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x18\n" +
 	"\acommand\x18\x02 \x01(\tR\acommand\x12\x12\n" +
-	"\x04args\x18\x03 \x03(\tR\x04args\"L\n" +
+	"\x04args\x18\x03 \x03(\tR\x04args\x12\x1c\n" +
+	"\ttimelimit\x18\x04 \x01(\rR\ttimelimit\"L\n" +
 	"\x06Result\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\x05R\x02id\x12\x18\n" +

@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
+/// Task execution time limit, in seconds, when the request omits it.
+pub(crate) const DEFAULT_TASK_TIMELIMIT: u32 = 15;
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Status {
     Running,
@@ -13,7 +16,13 @@ pub struct Task {
     pub(crate) id: u32,
     pub(crate) command: String,
     pub(crate) args: Vec<String>,
+    #[serde(default = "default_task_timelimit")]
+    pub(crate) timelimit: u32,
     status: Status,
+}
+
+fn default_task_timelimit() -> u32 {
+    DEFAULT_TASK_TIMELIMIT
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct Output {
@@ -78,6 +87,28 @@ impl TaskQueue {
     /// Consume and return all stored outputs, clearing the internal list.
     pub fn take_outputs(&mut self) -> Vec<Output> {
         std::mem::take(&mut self.outputs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn timelimit_defaults_to_fifteen_seconds() {
+        let task: Task =
+            serde_json::from_str(r#"{"id":1,"command":"echo","args":[],"status":"Queued"}"#)
+                .unwrap();
+        assert_eq!(task.timelimit, DEFAULT_TASK_TIMELIMIT);
+    }
+
+    #[test]
+    fn timelimit_from_request_is_preserved() {
+        let task: Task = serde_json::from_str(
+            r#"{"id":1,"command":"echo","args":[],"status":"Queued","timelimit":42}"#,
+        )
+        .unwrap();
+        assert_eq!(task.timelimit, 42);
     }
 }
 

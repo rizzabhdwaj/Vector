@@ -4,5 +4,6 @@ CREATE TABLE tasks_pending(
     args TEXT[],
     worker NUMERIC ,
     status TEXT , --- Queued / Running / Crashed 
+    timelimit BIGINT NOT NULL DEFAULT 15,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

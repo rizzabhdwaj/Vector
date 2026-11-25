@@ -36,15 +36,16 @@ impl Persister {
                 sqlx::query(
                     "WITH moved AS (
                          DELETE FROM tasks_pending WHERE id = $1
-                         RETURNING id, command, args, worker, created_at
+                         RETURNING id, command, args, worker, timelimit, created_at
                      )
-                     INSERT INTO tasks_compleated (id, command, args, worker, output, created_at)
-                     SELECT id, command, args, worker, $2, created_at FROM moved
+                     INSERT INTO tasks_compleated (id, command, args, worker, timelimit, output, created_at)
+                     SELECT id, command, args, worker, timelimit, $2, created_at FROM moved
                      ON CONFLICT (id) DO UPDATE SET
                          command = EXCLUDED.command,
                          args = EXCLUDED.args,
                          worker = EXCLUDED.worker,
-                         output = EXCLUDED.output,
+                         timelimit = EXCLUDED.timelimit,
+                          output = EXCLUDED.output,
                          created_at = EXCLUDED.created_at",
                 )
                 .bind(*id as i64)
