@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-
+use std::sync::Mutex;
 /// Task execution time limit, in seconds, when the request omits it.
 pub(crate) const DEFAULT_TASK_TIMELIMIT: u32 = 15;
+
+static COUNTER: Mutex<i32> = Mutex::new(0);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Status {
@@ -68,10 +70,16 @@ impl TaskQueue {
 
     /// Remove and return the next task, preferring recovered tasks.
     pub fn pop_task(&mut self) -> Option<Task> {
-        let mut task = self
-            .re_scheduled
-            .pop_front()
-            .or_else(|| self.scheduled.pop_front())?;
+        let mut cnt = COUNTER.lock().unwrap();
+        let mut task = if *cnt > 5 {
+            *cnt += 1;
+            self.re_scheduled
+                .pop_front()
+                .or_else(|| self.scheduled.pop_front())
+        } else {
+            *cnt = 0;
+            self.scheduled.pop_front()
+        }?;
         task.status = Status::Running;
         Some(task)
     }
