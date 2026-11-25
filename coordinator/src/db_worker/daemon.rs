@@ -45,7 +45,7 @@ impl Persister {
                          args = EXCLUDED.args,
                          worker = EXCLUDED.worker,
                          timelimit = EXCLUDED.timelimit,
-                          output = EXCLUDED.output,
+                         output = EXCLUDED.output,
                          created_at = EXCLUDED.created_at",
                 )
                 .bind(*id as i64)

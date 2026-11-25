@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
 type WorkerStatus = 'free' | 'busy' | 'dead'
-type Worker = { id: number; curr_status: WorkerStatus }
+type Worker = { id: number; curr_status: WorkerStatus; task_assigned: number[] }
 type TaskStatus = 'Running' | 'Queued' | 'Failed'
 type Task = { id: number; command: string; args: string[]; status: TaskStatus; timelimit: number }
 type TaskOutput = { task_id: number; output: string }
@@ -136,6 +136,7 @@ function App() {
                 <tr>
                   <th scope="col" className="px-4 py-3 font-medium">Worker ID</th>
                   <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Assigned tasks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -150,11 +151,14 @@ function App() {
                           {status.label}
                         </span>
                       </td>
+                      <td className="px-4 py-3 font-mono text-zinc-600">
+                        {worker.task_assigned?.length ? worker.task_assigned.join(', ') : '—'}
+                      </td>
                     </tr>
                   )
                 })}
                 {(!workers || workers.length === 0) && (
-                  <tr><td colSpan={2} className="px-4 py-8 text-center text-zinc-500">
+                  <tr><td colSpan={3} className="px-4 py-8 text-center text-zinc-500">
                     {workers ? 'No workers registered yet.' : workerError ? 'Worker list unavailable.' : 'Loading workers...'}
                   </td></tr>
                 )}

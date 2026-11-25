@@ -33,6 +33,8 @@ pub struct Output {
 #[derive(Debug, Serialize)]
 pub struct TaskQueue {
     content: VecDeque<Task>,
+    re_scheduled: VecDeque<Task>,
+
     outputs: Vec<Output>,
 }
 
@@ -42,6 +44,7 @@ impl TaskQueue {
         TaskQueue {
             content: VecDeque::new(),
             outputs: Vec::new(),
+            re_scheduled: VecDeque::new(),
         }
     }
 
@@ -50,7 +53,9 @@ impl TaskQueue {
         tsk.status = Status::Queued;
         self.content.push_back(tsk);
     }
-
+    pub fn re_schedule(&mut self, tsk: Task) {
+        self.re_scheduled.push_back(tsk);
+    }
     /// Push a task output (e.g. after execution completes).
     pub fn push_output(&mut self, out: Output) {
         self.outputs.push(out);
@@ -59,16 +64,6 @@ impl TaskQueue {
     /// All tasks currently in the queue (queued or running).
     pub fn tasks(&self) -> &VecDeque<Task> {
         &self.content
-    }
-
-    /// Number of tasks currently waiting in the queue.
-    pub fn len(&self) -> usize {
-        self.content.len()
-    }
-
-    /// Whether the queue currently holds no tasks.
-    pub fn is_empty(&self) -> bool {
-        self.content.is_empty()
     }
 
     /// Remove and return the next task, or `None` if the queue is empty.
@@ -111,4 +106,3 @@ mod tests {
         assert_eq!(task.timelimit, 42);
     }
 }
-

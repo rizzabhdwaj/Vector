@@ -41,6 +41,7 @@ A collection of independent workers responsible for executing tasks assigned by 
 
 - Receives tasks from the scheduler.
 - Executes assigned tasks and stops them at the requested time limit.
+- Tracks assigned, unfinished task IDs in `task_assigned` and clears them when each task finishes.
 - Reports execution results and failures.
 - Sends periodic heartbeats to the coordinator.
 

@@ -16,10 +16,11 @@ or set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` to browser-reachable endpoints
 before building. The WebSocket listener is local to the coordinator host. An
 HTTPS deployment should expose the WebSocket endpoint over `wss://`.
 
-Workers and tasks update over the WebSocket. The worker table shows registered workers and their
-reported availability, not verified liveness. Tasks are submitted to the shared
-queue, not to a selected worker. A submission confirmation means queued, not
-successfully executed.
+Workers and tasks update over the WebSocket. The worker table shows registered workers, their
+reported availability (not verified liveness), and the IDs of tasks currently
+assigned to them. Assigned tasks are removed from that list once they finish.
+Tasks are submitted to the shared queue, not to a selected worker. A submission
+confirmation means queued, not successfully executed.
 
 Enter an executable in Command and one argument per line in Arguments. Leave
 Arguments empty for a command with no arguments. Spaces within each line are

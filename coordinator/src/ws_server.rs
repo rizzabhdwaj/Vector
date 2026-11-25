@@ -182,7 +182,10 @@ mod tests {
                 let frame = ws.next().await.unwrap().unwrap();
                 let data: Value = serde_json::from_str(frame.to_text().unwrap()).unwrap();
                 if let Some(workers) = data.get("workers") {
-                    assert_eq!(*workers, json!([{ "id": 5001, "curr_status": "free" }]));
+                    assert_eq!(
+                        *workers,
+                        json!([{ "id": 5001, "curr_status": "free", "task_assigned": [] }])
+                    );
                     saw_workers = true;
                 } else {
                     assert_eq!(data, json!({ "tasks": [], "outputs": [] }));

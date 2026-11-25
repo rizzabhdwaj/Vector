@@ -1,9 +1,9 @@
 use crate::api::metrics::Metrics;
-use crate::task_queue::queue::{Output, Status, TaskQueue};
+use crate::scheduler::event::Event;
+use crate::task_queue::queue::{Output, TaskQueue};
 use crate::worker::workers::{WorkerStatus, Workforce};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
-use crate::scheduler::event::Event;
 
 mod task_rpc {
     tonic::include_proto!("task");
@@ -57,6 +57,7 @@ impl Scheduler {
                 break;
             };
             worker.curr_status = WorkerStatus::Busy;
+            worker.task_assigned.push(task.id);
             let worker_id = worker.id;
             let tasks = Arc::clone(&self.tasks);
             let workers = Arc::clone(&self.workers);
@@ -68,10 +69,12 @@ impl Scheduler {
 
             tokio::spawn(async move {
                 if let Some(s) = &sender {
-                    let _ = s.send(Event::TaskRunning {
-                        id: task.id,
-                        worker_id,
-                    }).await;
+                    let _ = s
+                        .send(Event::TaskRunning {
+                            id: task.id,
+                            worker_id,
+                        })
+                        .await;
                 }
 
                 let result = async {
@@ -106,6 +109,8 @@ impl Scheduler {
                             output: format!("Dispatch failed for worker {worker_id}: {error}"),
                             task_id: task.id,
                         });
+                        // The task never reached the worker, so it is not pending there.
+                        lock(&workers).finish_task(worker_id, task.id);
                         return;
                     }
                 };
@@ -117,12 +122,14 @@ impl Scheduler {
                 }
 
                 if let Some(s) = &sender {
-                    let _ = s.send(Event::TaskFinished {
-                        id: task.id,
-                        worker_id,
-                        output: output.clone(),
-                        success,
-                    }).await;
+                    let _ = s
+                        .send(Event::TaskFinished {
+                            id: task.id,
+                            worker_id,
+                            output: output.clone(),
+                            success,
+                        })
+                        .await;
                 }
                 lock(&tasks).push_output(Output {
                     output,
@@ -130,6 +137,7 @@ impl Scheduler {
                 });
                 // The worker responds only after execution; the scheduler never waits here.
                 let mut workers = lock(&workers);
+                workers.finish_task(worker_id, task.id);
                 if let Some(w) = workers.workers.iter_mut().find(|w| w.id == worker_id) {
                     w.curr_status = WorkerStatus::Free;
                 }
