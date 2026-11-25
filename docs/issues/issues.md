@@ -3,6 +3,11 @@
 ## Unsolved
 
 #### IMPORTANT
+
+- [ ] Recover pending task from the Database and append them into the in-memory task-book for execution 
+- [ ] Improve the task_queue.pop_task() algorithm or efficiency (cuz we dont want pending tasks to compleatly block off new tasks); 
+
+
 - [ ] A failed dispatch leaks the worker. The task is already popped from the queue, and on an RPC error the worker stays ``available = false`` forever. The task is lost and the slot is gone.
     - [*] Add last_seen to workers, and have a reaper mark workers dead after about 3 missed heartbeats.
     - [*] Add a proper task state machine (Queued → Running → Succeeded/Failed) with server-generated UUIDs.
