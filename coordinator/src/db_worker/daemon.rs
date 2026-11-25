@@ -24,7 +24,7 @@ impl Persister {
 
     async fn apply(&self, ev: &Event) -> Result<(), sqlx::Error> {
         match ev {
-            Event::TaskAssigned { id, worker_id } => {
+            Event::TaskRunning { id, worker_id } => {
                 sqlx::query("UPDATE tasks_pending SET status='running', worker=$2 WHERE id=$1")
                     .bind(*id as i64)
                     .bind(*worker_id)

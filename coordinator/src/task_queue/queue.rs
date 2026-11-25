@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Status {
-    Assigned,
+    Running,
     Queued,
     Failed, // will be requeued or assigned to a different worker ig
 }
@@ -47,7 +47,7 @@ impl TaskQueue {
         self.outputs.push(out);
     }
 
-    /// All tasks currently in the queue (queued or assigned).
+    /// All tasks currently in the queue (queued or running).
     pub fn tasks(&self) -> &VecDeque<Task> {
         &self.content
     }
@@ -65,7 +65,7 @@ impl TaskQueue {
     /// Remove and return the next task, or `None` if the queue is empty.
     pub fn pop_task(&mut self) -> Option<Task> {
         if let Some(task) = self.content.front_mut() {
-            task.status = Status::Assigned;
+            task.status = Status::Running;
         }
         self.content.pop_front()
     }

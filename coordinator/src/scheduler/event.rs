@@ -6,7 +6,7 @@ pub enum Event {
         id: u32,
         command: String,
     },
-    TaskAssigned {
+    TaskRunning {
         id: u32,
         worker_id: i32,
     },

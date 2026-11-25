@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 
 type WorkerStatus = 'free' | 'busy' | 'dead'
 type Worker = { id: number; curr_status: WorkerStatus }
-type TaskStatus = 'Assigned' | 'Queued' | 'Failed'
+type TaskStatus = 'Running' | 'Queued' | 'Failed'
 type Task = { id: number; command: string; args: string[]; status: TaskStatus }
 type TaskOutput = { task_id: number; output: string }
 type TaskQueueSnapshot = { content: Task[]; outputs: TaskOutput[] }
@@ -86,7 +86,7 @@ function App() {
           id,
           command: command.trim(),
           args: args === '' ? [] : args.replace(/\r\n/g, '\n').split('\n'),
-          status: 'Assigned',
+          status: 'Running',
         }),
         signal: AbortSignal.timeout(15000),
       })

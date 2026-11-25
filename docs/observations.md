@@ -53,4 +53,19 @@ worker 5002 heartbeat gap: 15.04231619s
 
 ### we already have 2 threads working (the Reaper and Scheduler on rust ) and i think i can have another working for DB Worker but ill just be adding just normal write through each step , and the parellel healper can just be a optimisation later on
 
-### nvm adding a DB_Worker only much simpler
+### nvm adding a DB_Worker only much simplera
+
+
+
+### Requeue Tasks from Dead Workers 
+#### Flow 
+- if worker == die's task remains "Running" in the database 
+- 2 Ways to fix this 
+    ##### WAY 1 
+    - check for timelimit assigned for each task to be compelated 
+    - if the task remains "Running" for > TIME_LIMIT , reassigned it to a new worker 
+    - DO NOT re-queue it 
+    
+    ##### WAY 2 
+    - keep checking the heartbeat of the assigned worker 
+    - if heartbeat died while task remains "Running"

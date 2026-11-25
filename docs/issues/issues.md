@@ -5,7 +5,7 @@
 #### IMPORTANT
 - [ ] A failed dispatch leaks the worker. The task is already popped from the queue, and on an RPC error the worker stays ``available = false`` forever. The task is lost and the slot is gone.
     - [*] Add last_seen to workers, and have a reaper mark workers dead after about 3 missed heartbeats.
-    - [ ] Add a proper task state machine (Queued → Running → Succeeded/Failed) with server-generated UUIDs.
+    - [*] Add a proper task state machine (Queued → Running → Succeeded/Failed) with server-generated UUIDs.
     - [ ] Requeue tasks from dead workers, add timeouts on both sides, and set a max-retries limit.
     - [ ] Write a chaos script that kills random workers while tasks run and checks that every task still completes.
 

@@ -68,7 +68,7 @@ impl Scheduler {
 
             tokio::spawn(async move {
                 if let Some(s) = &sender {
-                    let _ = s.send(Event::TaskAssigned {
+                    let _ = s.send(Event::TaskRunning {
                         id: task.id,
                         worker_id,
                     }).await;

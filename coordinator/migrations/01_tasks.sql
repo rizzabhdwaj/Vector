@@ -3,6 +3,6 @@ CREATE TABLE tasks_pending(
     command TEXT UNIQUE NOT NULL,
     args TEXT[],
     worker NUMERIC ,
-    status TEXT , --- Queued / Assigned / Crashed 
+    status TEXT , --- Queued / Running / Crashed 
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
