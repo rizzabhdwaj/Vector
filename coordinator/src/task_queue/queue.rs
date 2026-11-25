@@ -71,7 +71,7 @@ impl TaskQueue {
     /// Remove and return the next task, preferring recovered tasks.
     pub fn pop_task(&mut self) -> Option<Task> {
         let mut cnt = COUNTER.lock().unwrap();
-        let mut task = if *cnt > 5 {
+        let mut task = if *cnt < 5 {
             *cnt += 1;
             self.re_scheduled
                 .pop_front()
