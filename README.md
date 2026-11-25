@@ -35,6 +35,8 @@ Browser ──HTTP / WebSocket──▶ Dashboard (Vite dev proxy)
                   gRPC task dispatch to the worker port
 ```
 
+![Vector architecture](docs/architecture/vector.png)
+
 1. The dashboard posts a task to `POST /tasks`; the coordinator persists it in
    `tasks_pending` and adds it to an in-memory FIFO queue.
 2. The scheduler polls for workers marked free and calls their `FetchTask` gRPC

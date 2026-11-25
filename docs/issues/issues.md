@@ -6,13 +6,12 @@
 
 - [ ] Recover pending task from the Database and append them into the in-memory task-book for execution 
 - [ ] Improve the task_queue.pop_task() algorithm or efficiency (cuz we dont want pending tasks to compleatly block off new tasks); 
-
+- [ ] Write a chaos script that kills random workers while tasks run and checks that every task still completes.
 
 - [ ] A failed dispatch leaks the worker. The task is already popped from the queue, and on an RPC error the worker stays ``available = false`` forever. The task is lost and the slot is gone.
     - [*] Add last_seen to workers, and have a reaper mark workers dead after about 3 missed heartbeats.
     - [*] Add a proper task state machine (Queued → Running → Succeeded/Failed) with server-generated UUIDs.
     - [*] Requeue tasks from dead workers, add timeouts on both sides, and set a max-retries limit.
-    - [ ] Write a chaos script that kills random workers while tasks run and checks that every task still completes.
 
 #### Yeah aight (Also Important)
 - Heartbeats don’t do anything. ``update_worker`` returns early for known workers, so there’s no ``last_seen`` and no dead-worker detection. A killed worker stays in the registry and keeps receiving tasks.
