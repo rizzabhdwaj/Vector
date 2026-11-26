@@ -26,6 +26,31 @@ pub struct Task {
 fn default_task_timelimit() -> u32 {
     DEFAULT_TASK_TIMELIMIT
 }
+
+impl Task {
+    pub(crate) fn from_pending(
+        id: u32,
+        command: String,
+        args: Vec<String>,
+        timelimit: u32,
+        status: &str,
+    ) -> Self {
+        let status = match status.trim().to_ascii_lowercase().as_str() {
+            "running" => Status::Running,
+            "failed" => Status::Failed,
+            _ => Status::Queued,
+        };
+
+        Self {
+            id,
+            command,
+            args,
+            timelimit,
+            status,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct Output {
     pub(crate) output: String,
@@ -58,6 +83,18 @@ impl TaskQueue {
     pub fn re_schedule(&mut self, tsk: Task) {
         self.re_scheduled.push_back(tsk);
     }
+
+    /// Populate the queue from tasks loaded from `tasks_pending` at startup.
+    pub fn restore_pending(&mut self, tasks: Vec<Task>) {
+        for task in tasks {
+            if matches!(&task.status, Status::Running) {
+                self.re_scheduled.push_back(task);
+            } else {
+                self.scheduled.push_back(task);
+            }
+        }
+    }
+
     /// Push a task output (e.g. after execution completes).
     pub fn push_output(&mut self, out: Output) {
         self.outputs.push(out);
@@ -132,5 +169,32 @@ mod tests {
         assert_eq!(task.id, 7);
         assert!(matches!(task.status, Status::Running));
         assert!(queue.tasks().is_empty());
+    }
+
+    #[test]
+    fn restore_pending_splits_tasks_by_status() {
+        let mut queue = TaskQueue::create_queue();
+        queue.restore_pending(vec![
+            Task::from_pending(1, "echo".into(), Vec::new(), 15, "queued"),
+            Task::from_pending(2, "echo".into(), Vec::new(), 15, "running"),
+            Task::from_pending(3, "echo".into(), Vec::new(), 15, "failed"),
+        ]);
+
+        assert_eq!(
+            queue
+                .scheduled
+                .iter()
+                .map(|task| task.id)
+                .collect::<Vec<_>>(),
+            vec![1, 3]
+        );
+        assert_eq!(
+            queue
+                .re_scheduled
+                .iter()
+                .map(|task| task.id)
+                .collect::<Vec<_>>(),
+            vec![2]
+        );
     }
 }

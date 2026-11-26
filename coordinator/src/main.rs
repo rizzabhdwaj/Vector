@@ -30,6 +30,15 @@ async fn main() -> std::io::Result<()> {
 
     let work_force = Arc::new(Mutex::new(Workforce::init_workforce()));
     let task_q = Arc::new(Mutex::new(TaskQueue::create_queue()));
+
+    let pending_tasks = db::load_pending_tasks(&pool)
+        .await
+        .expect("failed to load tasks_pending");
+    task_q
+        .lock()
+        .expect("task queue lock poisoned")
+        .restore_pending(pending_tasks);
+
     let metrics = Arc::new(Metrics::new());
 
     let (persist_tx, persist_rx) = tokio::sync::mpsc::channel(16);
