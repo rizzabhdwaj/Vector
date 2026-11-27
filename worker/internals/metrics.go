@@ -85,24 +85,27 @@ func recordHeartbeat(err error) {
 	heartbeatsTotal.WithLabelValues(status).Inc()
 }
 
-// metricsMux registers the worker's metrics routes.
-func metricsMux() *http.ServeMux {
+// metricsMux registers the worker's metrics and opt-in chaos routes.
+func metricsMux(heartbeat *HeartbeatControl, enableChaos bool) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/metric", promhttp.Handler())
+	if enableChaos {
+		mux.HandleFunc("POST /chaos/heartbeat/pause", heartbeat.PauseHandler)
+	}
 	return mux
 }
 
 // StartMetricsServer serves Prometheus metrics over HTTP. The listen address
 // can be configured with WORKER_METRICS (default ":9100").
-func StartMetricsServer() {
+func StartMetricsServer(heartbeat *HeartbeatControl) {
 	addr := os.Getenv("WORKER_METRICS")
 	if addr == "" {
 		addr = ":9100"
 	}
 
 	log.Printf("metrics server listening on %s", addr)
-	if err := http.ListenAndServe(addr, metricsMux()); err != nil {
+	if err := http.ListenAndServe(addr, metricsMux(heartbeat, os.Getenv("WORKER_ENABLE_CHAOS") == "1")); err != nil {
 		log.Printf("metrics server stopped: %v", err)
 	}
 }

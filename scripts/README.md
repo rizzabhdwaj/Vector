@@ -46,3 +46,27 @@ sum by (status) (increase(worker_tasks_total[5m]))
 
 Run these as separate queries. Worker failures are expected when
 `FAILURE_PERCENT` is nonzero, even if every HTTP submission passes.
+
+## Pause a worker's heartbeat
+
+For local testing, restart workers with the opt-in chaos route enabled:
+
+```sh
+WORKER_ENABLE_CHAOS=1 bash worker/run.sh
+```
+
+Pause worker `5001` via its HTTP metrics port, `9101`:
+
+```sh
+curl -fsS -X POST 'http://localhost:9101/chaos/heartbeat/pause?seconds=25'
+```
+
+HTTP `204` (no body) means the pause was scheduled. The duration must be an
+integer from 1 to 300. A new request can extend an active pause but cannot
+shorten it. The worker resumes heartbeats automatically; an in-flight heartbeat
+may finish and the worker continues serving metrics and tasks. This route has no
+authentication, so only enable it on a trusted test listener.
+
+Graph `time() - worker_last_heartbeat_timestamp_seconds{worker_id="5001"}` to see
+the heartbeat age rise and fall. `up{worker_id="5001"}` should stay `1` while the
+coordinator can mark the worker dead after 15 seconds without a heartbeat.

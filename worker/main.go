@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -16,13 +15,6 @@ import (
 	"worker/internals"
 	pb "worker/proto"
 )
-
-func periodicHeartbeat(ctx context.Context, client pb.HeartbeatClient, workerID int32) {
-	for {
-		time.Sleep(5 * time.Second)
-		internals.Heartbeat(ctx, client, workerID)
-	}
-}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -50,8 +42,9 @@ func main() {
 	defer conn.Close()
 
 	client := pb.NewHeartbeatClient(conn)
+	heartbeat := internals.NewHeartbeatControl()
 
-	go periodicHeartbeat(context.Background(), client, int32(workerID))
-	go internals.StartMetricsServer()
+	go heartbeat.Run(context.Background(), client, int32(workerID))
+	go internals.StartMetricsServer(heartbeat)
 	internals.ProtoServer()
 }
