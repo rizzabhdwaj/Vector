@@ -3,7 +3,7 @@ use actix_web::{get, App, HttpResponse, HttpServer, post, web};
 use sqlx::PgPool;
 use std::sync::{Arc, Mutex};
 
-use crate::api::metrics::Metrics;
+use crate::api::metrics::{self, Metrics};
 use crate::task_queue::queue::{Task, TaskQueue, DEFAULT_TASK_TIMELIMIT};
 use crate::worker::workers::Workforce;
 use tokio::sync::mpsc;
@@ -80,6 +80,7 @@ pub async fn api_gateway(
             .app_data(metrics.clone())
             .app_data(pool.clone())
             .wrap(Cors::permissive())
+            .configure(metrics::configure)
             .service(get_outputs)
             .service(get_queue)
             .service(create_task)

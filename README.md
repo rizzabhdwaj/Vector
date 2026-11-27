@@ -166,6 +166,8 @@ docker compose -f monitoring/compose.yml up -d
 Open http://localhost:9090/targets; expect one coordinator target and five
 worker targets to be UP. The full metric list, example PromQL queries, and
 troubleshooting steps are in [monitoring/README.md](monitoring/README.md).
+To generate test traffic and intentional worker failures, see the
+[k6 chaos workload](scripts/README.md).
 
 ## Security notes
 
