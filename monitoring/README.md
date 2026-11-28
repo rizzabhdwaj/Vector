@@ -29,16 +29,16 @@ This builds and starts five workers. Each has a separate HTTP metrics port:
 
 | Process | Task/API port | Metrics URL |
 | --- | --- | --- |
-| Coordinator | HTTP 3030, gRPC 50052 | http://localhost:3030/metric |
-| Worker 5001 | gRPC 5001 | http://localhost:9101/metric |
-| Worker 5002 | gRPC 5002 | http://localhost:9102/metric |
-| Worker 5003 | gRPC 5003 | http://localhost:9103/metric |
-| Worker 5004 | gRPC 5004 | http://localhost:9104/metric |
-| Worker 5005 | gRPC 5005 | http://localhost:9105/metric |
+| Coordinator | HTTP 3030, gRPC 50052 | http://localhost:3030/metrics |
+| Worker 5001 | gRPC 5001 | http://localhost:9101/metrics |
+| Worker 5002 | gRPC 5002 | http://localhost:9102/metrics |
+| Worker 5003 | gRPC 5003 | http://localhost:9103/metrics |
+| Worker 5004 | gRPC 5004 | http://localhost:9104/metrics |
+| Worker 5005 | gRPC 5005 | http://localhost:9105/metrics |
 
-`/metrics` is an equivalent standard alias on every process. For a manually
-started worker set `WORKER_ID`, `WORKER_GRPC`, and `WORKER_METRICS`; the metrics
-server defaults to `:9100` if unset, so five manual workers need distinct ports.
+`/metric` is an equivalent alias on every process. For a manually started worker
+set `WORKER_ID`, `WORKER_GRPC`, and `WORKER_METRICS`; the metrics server defaults
+to `:9100` if unset, so five manual workers need distinct ports.
 
 Start Prometheus with Docker Compose (Linux host networking):
 
@@ -53,8 +53,10 @@ prometheus --config.file=monitoring/prometheus.yml
 ```
 
 Use only one of these options at a time. Open http://localhost:9090/targets:
-there should be **six UP targets** (one coordinator and five workers).
-The Docker setup keeps samples in a named volume for 15 days.
+there should be **seven UP targets** (Prometheus itself, one coordinator, and
+five workers). The jobs are `prometheus`, `vector-coordinator`, and
+`vector-workers`; scrape and evaluation intervals are 15 seconds. The Docker
+setup keeps samples in a named volume for 15 days.
 
 ## What to query
 
@@ -73,11 +75,11 @@ coordinator_workers_dead
 # Successful tasks per second, across all five workers
 sum(rate(worker_tasks_total{status="success"}[5m]))
 
-# Failures over the last five minutes, grouped by worker
-sum by (worker_id) (increase(worker_tasks_total{status="failure"}[5m]))
+# Failures over the last five minutes, grouped by worker metrics target
+sum by (instance) (increase(worker_tasks_total{status="failure"}[5m]))
 
-# 95th percentile execution time, per worker, in seconds
-histogram_quantile(0.95, sum by (le, worker_id) (rate(worker_task_duration_seconds_bucket[5m])))
+# 95th percentile execution time, per worker metrics target, in seconds
+histogram_quantile(0.95, sum by (le, instance) (rate(worker_task_duration_seconds_bucket[5m])))
 
 # Seconds since each worker last sent a successful heartbeat
 time() - worker_last_heartbeat_timestamp_seconds
@@ -96,13 +98,14 @@ failed includes execution and dispatch errors.
 Worker counters include `worker_heartbeats_total{status="success"|"failure"}`.
 Go runtime/process metrics are exported by the Go client library too.
 Use Prometheus's `up` to detect unreachable processes, not `worker_up`: a dead
-process cannot export a zero. The `worker_id` label comes from the scrape config.
+process cannot export a zero. Use the `instance` label to distinguish worker
+targets; it comes from each target's address in the scrape config.
 
 ## Troubleshooting and stopping
 
 ```sh
-curl http://localhost:3030/metric
-curl http://localhost:9101/metric
+curl http://localhost:3030/metrics
+curl http://localhost:9101/metrics
 docker compose -f monitoring/compose.yml logs prometheus
 docker compose -f monitoring/compose.yml down
 ```

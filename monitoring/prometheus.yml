@@ -1,28 +1,21 @@
 global:
-  scrape_interval: 5s
-  scrape_timeout: 4s
+  scrape_interval: 15s
+  evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: coordinator
-    metrics_path: /metric
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "vector-coordinator"
     static_configs:
       - targets: ["localhost:3030"]
 
-  - job_name: worker
-    metrics_path: /metric
+  - job_name: "vector-workers"
     static_configs:
-      - targets: ["localhost:9101"]
-        labels:
-          worker_id: "5001"
-      - targets: ["localhost:9102"]
-        labels:
-          worker_id: "5002"
-      - targets: ["localhost:9103"]
-        labels:
-          worker_id: "5003"
-      - targets: ["localhost:9104"]
-        labels:
-          worker_id: "5004"
-      - targets: ["localhost:9105"]
-        labels:
-          worker_id: "5005"
+      - targets:
+          - "localhost:9101"
+          - "localhost:9102"
+          - "localhost:9103"
+          - "localhost:9104"
+          - "localhost:9105"

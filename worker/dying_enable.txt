@@ -1,0 +1,3 @@
+WORKER_ENABLE_CHAOS=1 bash worker/run.sh
+Wait until the workers appear in the Vector dashboard, then run:
+HEARTBEAT_PAUSES=2 HEARTBEAT_PAUSE_SECONDS=30 k6 run scripts/chaos.js
